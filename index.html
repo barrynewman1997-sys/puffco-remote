@@ -6,170 +6,249 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Peak Remote</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d0f14;
-    --card: #161a22;
-    --card2: #1d2230;
-    --border: #2a3040;
-    --text: #e8ebf2;
-    --muted: #8b93a7;
-    --green: #2ecc71;
-    --amber: #f5a623;
-    --red: #e74c3c;
-    --blue: #4a90d9;
-    --accent: #7c5cff;
+    --bg: #05080e;
+    --panel: rgba(10, 20, 32, 0.82);
+    --panel2: rgba(14, 28, 44, 0.9);
+    --line: rgba(39, 215, 245, 0.28);
+    --line-dim: rgba(39, 215, 245, 0.12);
+    --cyan: #27d7f5;
+    --cyan-dim: #15808f;
+    --ink: #d7f4ff;
+    --muted: #6b8699;
+    --good: #3ddc84;
+    --warn: #ffb13d;
+    --info: #4aa3ff;
+    --bad: #ff5c5c;
+    --font-h: 'Rajdhani', 'Segoe UI', sans-serif;
+    --font-m: 'Share Tech Mono', ui-monospace, Menlo, monospace;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 24px);
-    max-width: 480px;
-    margin: 0 auto;
-    user-select: none;
-    -webkit-user-select: none;
+    background:
+      radial-gradient(ellipse 120% 70% at 50% -10%, rgba(39,215,245,0.07), transparent 60%),
+      repeating-linear-gradient(0deg, transparent 0 39px, rgba(39,215,245,0.04) 39px 40px),
+      repeating-linear-gradient(90deg, transparent 0 39px, rgba(39,215,245,0.04) 39px 40px),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--font-h);
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px);
+    max-width: 780px; margin: 0 auto;
+    user-select: none; -webkit-user-select: none;
   }
 
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  header h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: 0.3px; }
+  /* ---------- HUD chrome ---------- */
+  .panel {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 16px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(2px);
+  }
+  .panel::before, .panel::after {
+    content: ""; position: absolute; width: 14px; height: 14px; pointer-events: none;
+  }
+  .panel::before { top: -1px; left: -1px; border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan); }
+  .panel::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--cyan); border-right: 2px solid var(--cyan); }
+  .panel-title {
+    font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase;
+    font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::after { content: ""; flex: 1; height: 1px; background: var(--line-dim); }
+
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  header h1 { font-size: 19px; margin: 0; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; }
+  header h1 b { color: var(--cyan); font-weight: 700; }
   .conn-pill {
-    display: flex; align-items: center; gap: 7px;
-    background: var(--card); border: 1px solid var(--border);
-    padding: 6px 12px; border-radius: 999px; font-size: 13px; color: var(--muted);
+    display: flex; align-items: center; gap: 8px; border: 1px solid var(--line);
+    background: var(--panel); padding: 6px 13px; font-size: 12px; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase; font-weight: 600;
   }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
-  .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
-  .dot.busy { background: var(--amber); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--good); box-shadow: 0 0 10px var(--good); animation: pulse 2s infinite; }
+  .dot.busy { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+  @keyframes pulse { 50% { opacity: 0.5; } }
 
-  .card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  /* ---------- identity / hologram ---------- */
+  #identity { text-align: center; }
+  #holoWrap { position: relative; margin: 0 auto; max-width: 320px; }
+  #holo { width: 100%; height: auto; display: block; filter: drop-shadow(0 0 12px rgba(39,215,245,0.35)); }
+  .holo-anim { animation: flicker 7s infinite; }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.82; }
+    94% { opacity: 1; } 96% { opacity: 0.9; } 97% { opacity: 1; }
   }
-
-  /* Hero */
-  #hero { text-align: center; padding: 22px 16px; }
-  #bigTemp { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
-  #bigTemp small { font-size: 26px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
-  #stateBadge {
-    display: inline-block; margin-top: 10px; padding: 5px 14px; border-radius: 999px;
-    font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-    background: var(--card2); color: var(--muted); border: 1px solid var(--border);
+  #scanline { animation: scan 4.5s ease-in-out infinite alternate; }
+  @keyframes scan { from { transform: translateY(0); } to { transform: translateY(176px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .holo-anim, #scanline, .dot.on { animation: none !important; }
   }
-  #stateBadge.heat { color: #fff; border-color: transparent; }
-  #sessionBar { height: 6px; background: var(--card2); border-radius: 3px; margin-top: 14px; overflow: hidden; display: none; }
-  #sessionFill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--amber), var(--red)); transition: width 0.9s linear; }
-  #sessionTime { font-size: 13px; color: var(--muted); margin-top: 6px; display: none; }
+  #modelName {
+    font-size: 30px; font-weight: 700; letter-spacing: 6px; text-transform: uppercase;
+    color: var(--cyan); text-shadow: 0 0 18px rgba(39,215,245,0.6); margin-top: 4px;
+  }
+  #modelSub { font-family: var(--font-m); font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 5px; }
+  .holo-label { font-family: var(--font-m); font-size: 8.5px; fill: var(--muted); letter-spacing: 1px; }
+  .holo-value { font-family: var(--font-m); font-size: 10.5px; fill: var(--ink); }
+  .holo-stroke { stroke: var(--cyan); fill: none; }
 
-  /* Action buttons */
-  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  /* ---------- gauge ---------- */
+  #gaugePanel { text-align: center; }
+  #gaugeWrap { max-width: 300px; margin: 0 auto; position: relative; }
+  #gaugeTemp {
+    font-family: var(--font-m); font-size: 46px; fill: var(--ink);
+  }
+  #gaugeUnit { font-family: var(--font-m); font-size: 15px; fill: var(--muted); }
+  #gaugeState { font-family: var(--font-h); font-size: 13px; font-weight: 700; letter-spacing: 3px; fill: var(--muted); }
+  #gaugeTarget { font-family: var(--font-m); font-size: 10px; fill: var(--warn); }
+  .tick { stroke: rgba(107,134,153,0.5); stroke-width: 1.5; }
+  .tick-label { font-family: var(--font-m); font-size: 9px; fill: var(--muted); }
+  #sessionRow { display: none; margin-top: 10px; }
+  #sessionBar { height: 4px; background: rgba(39,215,245,0.1); overflow: hidden; }
+  #sessionFill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--warn), var(--bad)); transition: width 0.9s linear; }
+  #sessionTime { font-family: var(--font-m); font-size: 12px; color: var(--warn); letter-spacing: 2px; margin-top: 6px; }
+
+  /* ---------- actions ---------- */
+  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
   .actions button {
-    padding: 18px 0; border: none; border-radius: 14px; font-size: 16px; font-weight: 800;
-    color: #fff; letter-spacing: 0.5px; cursor: pointer; transition: transform 0.06s, opacity 0.2s;
+    position: relative; padding: 17px 0 15px; background: var(--panel);
+    font-family: var(--font-h); font-size: 15px; font-weight: 700; letter-spacing: 3px;
+    cursor: pointer; transition: transform 0.06s, background 0.2s;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   }
   .actions button:active { transform: scale(0.96); }
-  .actions button:disabled { opacity: 0.35; }
-  #btnStart { background: linear-gradient(135deg, #27ae60, #2ecc71); }
-  #btnBoost { background: linear-gradient(135deg, #e67e22, #f5a623); }
-  #btnStop  { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+  .actions button:disabled { opacity: 0.3; }
+  #btnStart { border: 1px solid var(--good); color: var(--good); text-shadow: 0 0 10px rgba(61,220,132,0.5); }
+  #btnBoost { border: 1px solid var(--warn); color: var(--warn); text-shadow: 0 0 10px rgba(255,177,61,0.5); }
+  #btnStop  { border: 1px solid var(--bad);  color: var(--bad);  text-shadow: 0 0 10px rgba(255,92,92,0.5); }
+  #btnStart:active { background: rgba(61,220,132,0.12); }
+  #btnBoost:active { background: rgba(255,177,61,0.12); }
+  #btnStop:active  { background: rgba(255,92,92,0.12); }
 
-  /* Stat row */
-  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
-  .stat .v { font-size: 20px; font-weight: 800; }
-  .stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+  /* ---------- sparkline ---------- */
+  #spark { width: 100%; height: auto; display: block; touch-action: none; }
+  #sparkTip {
+    position: absolute; display: none; pointer-events: none; background: var(--panel2);
+    border: 1px solid var(--line); padding: 4px 8px; font-family: var(--font-m);
+    font-size: 11px; color: var(--ink); white-space: nowrap; z-index: 5;
+  }
+  #sparkMeta { display: flex; justify-content: space-between; font-family: var(--font-m); font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: 1px; }
+  #sparkMeta b { color: var(--cyan); font-weight: 400; }
 
-  /* Profiles */
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin: 18px 2px 10px; font-weight: 700; }
+  /* ---------- stat tiles ---------- */
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .tile {
+    background: var(--panel); border: 1px solid var(--line-dim); padding: 12px 14px; position: relative;
+  }
+  .tile::before { content: ""; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px; border-top: 2px solid var(--cyan-dim); border-left: 2px solid var(--cyan-dim); }
+  .tile .l { font-size: 10px; letter-spacing: 2.5px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+  .tile .v { font-family: var(--font-m); font-size: 24px; margin-top: 4px; }
+  .tile .v small { font-size: 13px; color: var(--muted); }
+  .segbar { display: flex; gap: 2px; margin-top: 7px; }
+  .segbar i { flex: 1; height: 5px; background: rgba(39,215,245,0.12); }
+  .segbar i.f { background: var(--cyan); box-shadow: 0 0 5px rgba(39,215,245,0.6); }
+  .segbar i.f.low { background: var(--bad); box-shadow: 0 0 5px rgba(255,92,92,0.6); }
+
+  /* ---------- profiles ---------- */
   .profiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .profile {
-    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-    padding: 14px; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    background: var(--panel); border: 1px solid var(--line-dim); padding: 12px 14px;
+    cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; position: relative;
   }
-  .profile.active { border-color: var(--accent); background: linear-gradient(180deg, rgba(124,92,255,0.12), var(--card)); }
-  .profile .pname { font-size: 14px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .profile .ptemp { font-size: 22px; font-weight: 800; }
-  .profile .ptime { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .profile.active { border-color: var(--cyan); box-shadow: 0 0 14px rgba(39,215,245,0.25), inset 0 0 20px rgba(39,215,245,0.06); }
+  .profile.active::after { content: "ARMED"; position: absolute; top: 8px; right: 10px; font-size: 9px; letter-spacing: 2px; color: var(--cyan); font-weight: 700; }
+  .profile .pname { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  .profile.active .pname { color: var(--ink); }
+  .profile .ptemp { font-family: var(--font-m); font-size: 23px; }
+  .profile .ptime { font-family: var(--font-m); font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-  /* Editor */
-  #editor { display: none; }
+  /* ---------- editor / toggles ---------- */
   .edit-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
-  .edit-row .label { font-size: 14px; color: var(--muted); }
-  .stepper { display: flex; align-items: center; gap: 14px; }
+  .edit-row .label { font-size: 12px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+  .stepper { display: flex; align-items: center; gap: 12px; }
   .stepper button {
-    width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--border);
-    background: var(--card2); color: var(--text); font-size: 22px; font-weight: 700; cursor: pointer;
+    width: 42px; height: 42px; border: 1px solid var(--line); background: var(--panel2);
+    color: var(--cyan); font-size: 22px; font-weight: 700; cursor: pointer; font-family: var(--font-h);
   }
-  .stepper button:active { background: var(--border); }
-  .stepper .val { font-size: 18px; font-weight: 800; min-width: 74px; text-align: center; }
+  .stepper button:active { background: rgba(39,215,245,0.15); }
+  .stepper .val { font-family: var(--font-m); font-size: 17px; min-width: 78px; text-align: center; }
 
-  /* Toggles */
-  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
-  .toggle-row + .toggle-row { border-top: 1px solid var(--border); }
-  .toggle-row .label { font-size: 15px; }
-  .switch { position: relative; width: 52px; height: 30px; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; }
+  .toggle-row + .toggle-row { border-top: 1px solid var(--line-dim); }
+  .toggle-row .label { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; color: var(--muted); }
+  .switch { position: relative; width: 52px; height: 28px; }
   .switch input { opacity: 0; width: 0; height: 0; }
-  .slider-sw {
-    position: absolute; inset: 0; background: var(--card2); border: 1px solid var(--border);
-    border-radius: 999px; cursor: pointer; transition: background 0.2s;
-  }
-  .slider-sw::before {
-    content: ""; position: absolute; width: 24px; height: 24px; left: 2px; top: 2px;
-    background: var(--muted); border-radius: 50%; transition: transform 0.2s, background 0.2s;
-  }
-  .switch input:checked + .slider-sw { background: var(--accent); border-color: var(--accent); }
-  .switch input:checked + .slider-sw::before { transform: translateX(22px); background: #fff; }
-  input[type=range] { width: 100%; accent-color: var(--accent); height: 30px; }
+  .slider-sw { position: absolute; inset: 0; background: var(--panel2); border: 1px solid var(--line); cursor: pointer; transition: background 0.2s; }
+  .slider-sw::before { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: var(--muted); transition: transform 0.2s, background 0.2s; }
+  .switch input:checked + .slider-sw { background: rgba(39,215,245,0.18); border-color: var(--cyan); }
+  .switch input:checked + .slider-sw::before { transform: translateX(24px); background: var(--cyan); box-shadow: 0 0 8px rgba(39,215,245,0.7); }
+  input[type=range] { width: 100%; accent-color: var(--cyan); height: 30px; }
 
-  /* Connect screen */
-  #connectCard { text-align: center; padding: 30px 20px; }
-  #connectCard p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+  /* ---------- connect screen ---------- */
+  #connectCard { text-align: center; padding: 34px 20px; }
+  #connectCard p { color: var(--muted); font-size: 13px; line-height: 1.6; letter-spacing: 1px; }
   .big-btn {
-    width: 100%; padding: 18px; border: none; border-radius: 14px; margin-top: 10px;
-    background: linear-gradient(135deg, #6a4df0, #8c6cff); color: #fff;
-    font-size: 17px; font-weight: 800; letter-spacing: 0.5px; cursor: pointer;
+    width: 100%; padding: 17px; margin-top: 12px; background: rgba(39,215,245,0.1);
+    border: 1px solid var(--cyan); color: var(--cyan); font-family: var(--font-h);
+    font-size: 15px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; cursor: pointer;
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+    text-shadow: 0 0 10px rgba(39,215,245,0.6);
   }
-  .big-btn:active { transform: scale(0.98); }
-  .ghost-btn {
-    width: 100%; padding: 13px; border: 1px solid var(--border); border-radius: 14px; margin-top: 10px;
-    background: transparent; color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer;
-  }
-  #noBle { display: none; background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.4); border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.5; margin-top: 14px; text-align: left; }
+  .big-btn:active { background: rgba(39,215,245,0.22); }
+  .ghost-btn { width: 100%; padding: 12px; border: 1px solid var(--line-dim); margin-top: 10px; background: transparent; color: var(--muted); font-family: var(--font-h); font-size: 12px; letter-spacing: 2px; font-weight: 600; cursor: pointer; text-transform: uppercase; }
+  #noBle { display: none; background: rgba(255,92,92,0.08); border: 1px solid rgba(255,92,92,0.4); padding: 12px; font-size: 13px; line-height: 1.5; margin-top: 14px; text-align: left; }
 
-  /* Footer / log */
+  /* ---------- footer / log ---------- */
   footer { display: flex; gap: 10px; margin-top: 18px; }
-  footer button { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+  footer button { flex: 1; padding: 12px; border: 1px solid var(--line-dim); background: var(--panel); color: var(--muted); font-family: var(--font-h); font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; }
   #log {
-    display: none; background: #0a0c10; border: 1px solid var(--border); border-radius: 12px;
-    margin-top: 10px; padding: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 11px;
-    line-height: 1.6; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
-    color: #9aa3b8; user-select: text; -webkit-user-select: text;
+    display: none; background: #03050a; border: 1px solid var(--line-dim); margin-top: 10px; padding: 10px;
+    font-family: var(--font-m); font-size: 11px; line-height: 1.6; max-height: 220px; overflow-y: auto;
+    white-space: pre-wrap; word-break: break-all; color: #7e95ab; user-select: text; -webkit-user-select: text;
   }
-  #log .err { color: var(--red); }
+  #log .err { color: var(--bad); }
   #toast {
     position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); left: 50%; transform: translateX(-50%);
-    background: var(--card2); border: 1px solid var(--border); color: var(--text);
-    padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity 0.25s; pointer-events: none;
-    max-width: 90vw; text-align: center;
+    background: var(--panel2); border: 1px solid var(--cyan); color: var(--ink); padding: 10px 20px;
+    font-family: var(--font-m); font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none;
+    max-width: 90vw; text-align: center; z-index: 10;
   }
   #app { display: none; }
+
+  /* ---------- desktop ---------- */
+  @media (min-width: 700px) {
+    .top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
+    .top-grid .panel { margin-bottom: 0; }
+    .top-grid { margin-bottom: 14px; }
+    .tiles { grid-template-columns: repeat(3, 1fr); }
+    .profiles { grid-template-columns: repeat(4, 1fr); }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Peak Remote</h1>
+  <h1>Puffco <b>// HUD</b></h1>
   <div class="conn-pill"><div class="dot" id="connDot"></div><span id="connLabel">Offline</span></div>
 </header>
 
 <!-- CONNECT SCREEN -->
-<div class="card" id="connectCard">
-  <div style="font-size:44px; margin-bottom:8px;">&#128293;</div>
-  <p>Wake your Peak Pro (tap its button once so it's not asleep), then connect.</p>
-  <button class="big-btn" id="btnConnect">Connect to Peak Pro</button>
-  <button class="ghost-btn" id="btnConnectAll">Device not showing? Scan all devices</button>
+<div class="panel" id="connectCard">
+  <svg viewBox="0 0 120 120" width="110" style="filter: drop-shadow(0 0 10px rgba(39,215,245,0.4));">
+    <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(39,215,245,0.25)" stroke-width="1" stroke-dasharray="4 6"/>
+    <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(39,215,245,0.5)" stroke-width="1" stroke-dasharray="40 85"/>
+    <circle cx="60" cy="60" r="28" fill="none" stroke="#27d7f5" stroke-width="1.5" stroke-dasharray="20 30"/>
+    <text x="60" y="66" text-anchor="middle" fill="#27d7f5" font-size="18" font-family="monospace">BLE</text>
+  </svg>
+  <p>WAKE UNIT &mdash; SINGLE TAP ON DEVICE BUTTON<br>THEN INITIALIZE UPLINK</p>
+  <button class="big-btn" id="btnConnect">Initialize Uplink</button>
+  <button class="ghost-btn" id="btnConnectAll">Unit not found &mdash; wide scan</button>
   <div id="noBle">
     <b>Bluetooth is not available in this browser.</b><br>
     On iPhone, open this page in the free <b>Bluefy</b> browser (App Store) &mdash; Safari and Chrome on iOS block Web Bluetooth.
@@ -178,32 +257,153 @@
 
 <!-- MAIN APP -->
 <div id="app">
-  <div class="card" id="hero">
-    <div id="bigTemp">--<small id="unitLabel">&deg;F</small></div>
-    <div id="stateBadge">Idle</div>
-    <div id="sessionBar"><div id="sessionFill"></div></div>
-    <div id="sessionTime"></div>
+  <div class="top-grid">
+
+  <!-- HOLOGRAM / IDENTITY -->
+  <div class="panel" id="identity">
+    <div class="panel-title">Unit Schematic</div>
+    <div id="holoWrap">
+      <svg id="holo" viewBox="0 0 300 268" class="holo-anim">
+        <defs>
+          <linearGradient id="holoFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#27d7f5" stop-opacity="0.14"/>
+            <stop offset="1" stop-color="#27d7f5" stop-opacity="0.02"/>
+          </linearGradient>
+          <linearGradient id="padGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#27d7f5" stop-opacity="0.5"/>
+            <stop offset="1" stop-color="#27d7f5" stop-opacity="0"/>
+          </linearGradient>
+          <clipPath id="deviceClip">
+            <path d="M150 28 l12 0 0 14 c14 8 24 24 24 40 0 10 -4 19 -10 26 l0 10 c10 4 16 10 17 18 l5 72 c1 10 -8 16 -18 16 l-60 0 c-10 0 -19 -6 -18 -16 l5 -72 c1 -8 7 -14 17 -18 l0 -10 c-6 -7 -10 -16 -10 -26 0 -16 10 -32 24 -40 l0 -14 z"/>
+          </clipPath>
+        </defs>
+
+        <!-- projector pad -->
+        <g opacity="0.9">
+          <ellipse cx="150" cy="242" rx="92" ry="14" fill="none" stroke="rgba(39,215,245,0.2)" stroke-width="1" stroke-dasharray="3 7"/>
+          <ellipse cx="150" cy="242" rx="66" ry="10" fill="none" stroke="rgba(39,215,245,0.35)" stroke-width="1" stroke-dasharray="14 10"/>
+          <ellipse cx="150" cy="242" rx="40" ry="6" fill="url(#padGrad)" opacity="0.35"/>
+        </g>
+
+        <!-- device wireframe (stylized Peak Pro: mouthpiece, perc globe, LED band, tapered base) -->
+        <g class="holo-stroke" stroke-width="1.3">
+          <!-- mouthpiece -->
+          <ellipse cx="156" cy="28" rx="6.5" ry="2.6"/>
+          <path d="M149.5 28 l0 15 M162.5 28 l0 14"/>
+          <!-- glass globe -->
+          <path d="M156 42 c-15 8 -25 24 -25 40 0 11 5 21 12 27 M156 42 c15 8 25 24 25 40 0 11 -5 21 -12 27"/>
+          <ellipse cx="156" cy="82" rx="25" ry="7" opacity="0.45"/>
+          <ellipse cx="156" cy="100" rx="22" ry="6" opacity="0.3"/>
+          <!-- internal perc chimney -->
+          <path d="M150 108 c0 -8 2 -13 6 -16 4 3 6 8 6 16" opacity="0.6"/>
+          <!-- LED band (state colored) -->
+          <ellipse id="ledBand" cx="150" cy="122" rx="30" ry="7" stroke="#6b8699" stroke-width="2.4"/>
+          <!-- base -->
+          <path d="M127 128 c-6 3 -10 8 -11 14 l-5 66 c-1 9 7 15 16 15 l46 0 c9 0 17 -6 16 -15 l-5 -66 c-1 -6 -5 -11 -11 -14"/>
+          <ellipse cx="150" cy="160" rx="31" ry="6" opacity="0.3"/>
+          <ellipse cx="150" cy="190" rx="33" ry="6" opacity="0.3"/>
+          <path d="M138 223 l24 0" opacity="0.5"/>
+          <!-- oculus / atomizer hint -->
+          <ellipse cx="150" cy="140" rx="9" ry="3.4" opacity="0.7"/>
+        </g>
+        <!-- holo fill wash -->
+        <path d="M150 28 l12 0 0 14 c14 8 24 24 24 40 0 10 -4 19 -10 26 l0 10 c10 4 16 10 17 18 l5 72 c1 10 -8 16 -18 16 l-60 0 c-10 0 -19 -6 -18 -16 l5 -72 c1 -8 7 -14 17 -18 l0 -10 c-6 -7 -10 -16 -10 -26 0 -16 10 -32 24 -40 l0 -14 z" fill="url(#holoFill)" opacity="0.8"/>
+
+        <!-- scanline sweeping inside the silhouette -->
+        <g clip-path="url(#deviceClip)">
+          <rect id="scanline" x="100" y="26" width="100" height="3" fill="#27d7f5" opacity="0.5"/>
+        </g>
+
+        <!-- callouts -->
+        <g stroke="rgba(39,215,245,0.45)" stroke-width="1" fill="none">
+          <circle cx="178" cy="78" r="2.5" fill="#27d7f5" stroke="none"/>
+          <path d="M178 78 L215 60 L246 60"/>
+          <circle cx="152" cy="140" r="2.5" fill="#27d7f5" stroke="none"/>
+          <path d="M152 140 L96 128 L54 128" />
+          <circle cx="172" cy="200" r="2.5" fill="#27d7f5" stroke="none"/>
+          <path d="M172 200 L215 212 L246 212"/>
+        </g>
+        <g text-anchor="start">
+          <text class="holo-label" x="218" y="52">GLASS / STATE</text>
+          <text class="holo-value" x="218" y="70" id="calloutState" fill="#6b8699">STANDBY</text>
+          <text class="holo-label" x="218" y="204">POWER CELL</text>
+          <text class="holo-value" x="218" y="226" id="calloutBatt">--%</text>
+        </g>
+        <g text-anchor="end">
+          <text class="holo-label" x="82" y="120">CHAMBER</text>
+          <text class="holo-value" x="82" y="138" id="calloutTemp">--</text>
+        </g>
+      </svg>
+    </div>
+    <div id="modelName">&mdash;</div>
+    <div id="modelSub">AWAITING LINK</div>
   </div>
+
+  <!-- GAUGE -->
+  <div class="panel" id="gaugePanel">
+    <div class="panel-title">Thermal Core</div>
+    <div id="gaugeWrap">
+      <svg viewBox="0 0 300 260" id="gauge">
+        <g id="gaugeTicks"></g>
+        <path id="gaugeTrack" fill="none" stroke="rgba(39,215,245,0.12)" stroke-width="10" stroke-linecap="butt"/>
+        <path id="gaugeFill" fill="none" stroke="#27d7f5" stroke-width="10" stroke-linecap="butt" style="filter: drop-shadow(0 0 6px rgba(39,215,245,0.7));"/>
+        <line id="targetTick" x1="0" y1="0" x2="0" y2="0" stroke="#ffb13d" stroke-width="3" style="filter: drop-shadow(0 0 4px rgba(255,177,61,0.8));"/>
+        <text id="gaugeTemp" x="150" y="150" text-anchor="middle">--</text>
+        <text id="gaugeUnit" x="150" y="172" text-anchor="middle">&deg;F</text>
+        <text id="gaugeState" x="150" y="200" text-anchor="middle">STANDBY</text>
+        <text id="gaugeTarget" x="150" y="222" text-anchor="middle"></text>
+      </svg>
+      <div id="sessionRow">
+        <div id="sessionBar"><div id="sessionFill"></div></div>
+        <div id="sessionTime"></div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /top-grid -->
 
   <div class="actions">
-    <button id="btnStart">START</button>
+    <button id="btnStart">IGNITE</button>
     <button id="btnBoost">BOOST</button>
-    <button id="btnStop">STOP</button>
+    <button id="btnStop">ABORT</button>
   </div>
 
-  <div class="stats">
-    <div class="stat"><div class="v" id="statBattery">--%</div><div class="l" id="statBatteryLbl">Battery</div></div>
-    <div class="stat"><div class="v" id="statDabs">--</div><div class="l">Total Dabs</div></div>
-    <div class="stat"><div class="v" id="statName" style="font-size:14px; line-height:20px;">--</div><div class="l">Device</div></div>
-  </div>
-
-  <h2>Heat Profiles</h2>
-  <div class="profiles" id="profiles"></div>
-
-  <div class="card" id="editor">
-    <div class="edit-row">
-      <span class="label" id="editTitle">Edit profile</span>
+  <!-- SPARKLINE -->
+  <div class="panel" style="position:relative;">
+    <div class="panel-title">Chamber Temp &mdash; Live Feed</div>
+    <svg id="spark" viewBox="0 0 600 140" preserveAspectRatio="none">
+      <g id="sparkGrid"></g>
+      <path id="sparkArea" fill="rgba(39,215,245,0.08)" stroke="none"/>
+      <path id="sparkLine" fill="none" stroke="#27d7f5" stroke-width="2" style="filter: drop-shadow(0 0 4px rgba(39,215,245,0.5));"/>
+      <line id="sparkCursor" x1="-10" y1="0" x2="-10" y2="140" stroke="rgba(215,244,255,0.4)" stroke-width="1"/>
+      <circle id="sparkDot" cx="-10" cy="-10" r="3.5" fill="#27d7f5"/>
+    </svg>
+    <div id="sparkTip"></div>
+    <div id="sparkMeta">
+      <span>MIN <b id="sparkMin">--</b></span>
+      <span>NOW <b id="sparkNow">--</b></span>
+      <span>MAX <b id="sparkMax">--</b></span>
     </div>
+  </div>
+
+  <!-- STAT TILES -->
+  <div class="tiles">
+    <div class="tile"><div class="l" id="battLbl">Power Cell</div><div class="v" id="statBattery">--<small>%</small></div><div class="segbar" id="battBar"></div></div>
+    <div class="tile"><div class="l">Total Dabs</div><div class="v" id="statDabs">--</div></div>
+    <div class="tile"><div class="l">Chamber</div><div class="v" id="statChamber" style="font-size:17px; padding-top:5px;">--</div></div>
+    <div class="tile"><div class="l">Firmware</div><div class="v" id="statFw" style="font-size:17px; padding-top:5px;">--</div></div>
+    <div class="tile"><div class="l">Target</div><div class="v" id="statTarget">--</div></div>
+    <div class="tile"><div class="l">Link Time</div><div class="v" id="statUptime">--</div></div>
+  </div>
+
+  <!-- PROFILES -->
+  <div class="panel">
+    <div class="panel-title">Heat Profiles</div>
+    <div class="profiles" id="profiles"></div>
+  </div>
+
+  <div class="panel" id="editor" style="display:none;">
+    <div class="panel-title" id="editTitle">Calibrate</div>
     <div class="edit-row">
       <span class="label">Temperature</span>
       <div class="stepper">
@@ -222,26 +422,27 @@
     </div>
   </div>
 
-  <h2>Device</h2>
-  <div class="card">
+  <!-- SYSTEM -->
+  <div class="panel">
+    <div class="panel-title">Systems</div>
     <div class="toggle-row">
-      <span class="label">Stealth mode (lights off)</span>
+      <span class="label">Stealth Mode</span>
       <label class="switch"><input type="checkbox" id="swStealth"><span class="slider-sw"></span></label>
     </div>
     <div class="toggle-row">
-      <span class="label">Lantern (ambient light)</span>
+      <span class="label">Lantern</span>
       <label class="switch"><input type="checkbox" id="swLantern"><span class="slider-sw"></span></label>
     </div>
     <div class="toggle-row" style="display:block;">
-      <span class="label">LED brightness</span>
+      <span class="label">LED Output</span>
       <input type="range" id="brightSlider" min="5" max="255" value="255">
     </div>
   </div>
 
   <footer>
-    <button id="btnUnits">Show &deg;C</button>
-    <button id="btnLog">Debug Log</button>
-    <button id="btnDisconnect">Disconnect</button>
+    <button id="btnUnits">Units &deg;C</button>
+    <button id="btnLog">Telemetry Log</button>
+    <button id="btnDisconnect">Sever Link</button>
   </footer>
 </div>
 
@@ -275,6 +476,7 @@ const PATH = {
   TOTAL:        '/p/app/stat/tott',
   MODE_CONTROL: '/p/app/mc',
   CHAMBER_TEMP: '/p/app/htr/temp',
+  CHAMBER_TYPE: '/p/htr/chmt',
   BATTERY_SOC:  '/p/bat/soc',
   CHARGE_STAT:  '/p/bat/chg/stat',
   DABS:         '/p/app/odom/0/nc',
@@ -290,15 +492,25 @@ const PATH = {
 
 const MC = { START: 0x07, STOP: 0x08, BOOST: 0x09 };
 
-// Operating states (firmware enum)
+// Operating states (firmware enum): [label, color, isHeating]
 const STATES = {
-  0:['Disconnected','#8b93a7'], 1:['Off','#8b93a7'], 2:['Booting','#8b93a7'],
-  3:['Sleep','#8b93a7'], 5:['Idle','#8b93a7'], 6:['Temp Select','#4a90d9'],
-  7:['Preheating','#f5a623'], 8:['Active','#2ecc71'], 9:['Fading','#4a90d9'],
-  10:['Ready','#2ecc71'], 11:['Cooldown','#4a90d9'], 12:['Error','#e74c3c'],
-  13:['Shutdown','#8b93a7'],
+  0:['OFFLINE','#6b8699'], 1:['POWERED OFF','#6b8699'], 2:['BOOT','#6b8699'],
+  3:['SLEEP','#6b8699'], 5:['STANDBY','#6b8699'], 6:['TEMP SELECT','#4aa3ff'],
+  7:['PREHEATING','#ffb13d'], 8:['ACTIVE','#3ddc84'], 9:['FADING','#4aa3ff'],
+  10:['READY','#3ddc84'], 11:['COOLDOWN','#4aa3ff'], 12:['FAULT','#ff5c5c'],
+  13:['SHUTDOWN','#6b8699'],
 };
 const HEATING_STATES = [6,7,8,9,10];
+const CHAMBERS = { 0:'NONE', 1:'STANDARD', 2:'3DXL V1', 3:'3D', 4:'3DXL', 5:'PROXY 3D' };
+
+function resolveModel(name, modelNumber) {
+  const c = `${name} ${modelNumber}`.toLowerCase();
+  if (c.includes('proxy')) return 'Puffco Proxy';
+  if (c.includes('pivot')) return 'Puffco Pivot';
+  if (c.includes('v2') || c.includes('new peak') || c.includes('desert') || c.includes('flourish')) return 'Peak Pro V2';
+  if (c.includes('v1') || c.includes('opal') || c.includes('indiglow')) return 'Peak Pro V1';
+  return 'Peak Pro';
+}
 
 /* ---------------- logging / UI helpers ---------------- */
 const $ = id => document.getElementById(id);
@@ -491,9 +703,26 @@ async function authenticate() {
   log('auth: handshake OK');
 }
 
+async function readDeviceInfo() {
+  // GATT Device Information service (model number / firmware / hardware rev)
+  const info = { model: '', fw: '', hw: '' };
+  try {
+    const svc = await client.server.getPrimaryService(DEVINFO_SERVICE);
+    const tryRead = async (uuid) => {
+      try { const c = await svc.getCharacteristic(uuid); return dec.decode(await c.readValue()).replace(/\0+$/, '').trim(); }
+      catch (e) { return ''; }
+    };
+    info.model = await tryRead(0x2a24);
+    info.fw = await tryRead(0x2a26);
+    info.hw = await tryRead(0x2a27);
+    log(`devinfo: model="${info.model}" fw="${info.fw}" hw="${info.hw}"`);
+  } catch (e) { log(`devinfo service unavailable: ${e.message}`); }
+  return info;
+}
+
 async function connect(scanAll) {
   if (!navigator.bluetooth) { $('noBle').style.display = 'block'; return; }
-  setConn('busy', 'Scanning...');
+  setConn('busy', 'Scanning');
   let opts;
   if (scanAll) {
     opts = { acceptAllDevices: true, optionalServices: [LORAX_SERVICE, DEVINFO_SERVICE] };
@@ -511,7 +740,7 @@ async function connect(scanAll) {
     const device = await navigator.bluetooth.requestDevice(opts);
     client.device = device;
     device.addEventListener('gattserverdisconnected', onDisconnected);
-    setConn('busy', 'Connecting...');
+    setConn('busy', 'Linking');
     log(`connecting to "${device.name || device.id}"...`);
     client.server = await device.gatt.connect();
     const svc = await client.server.getPrimaryService(LORAX_SERVICE);
@@ -522,16 +751,17 @@ async function connect(scanAll) {
     client.connected = true;
     client.isProxy = /proxy/i.test(device.name || '');
     await authenticate();
-    setConn('on', device.name || 'Connected');
+    app.connectedAt = Date.now();
+    setConn('on', 'Linked');
     $('connectCard').style.display = 'none';
     $('app').style.display = 'block';
-    toast('Connected');
+    toast('UPLINK ESTABLISHED');
     await initialReads();
     startPolling();
   } catch (err) {
     log(`connect failed: ${err.message}`, true);
     setConn('off', 'Offline');
-    if (!/cancelled|canceled|chooser/i.test(err.message)) toast(`Connect failed: ${err.message}`);
+    if (!/cancelled|canceled|chooser/i.test(err.message)) toast(`LINK FAILED: ${err.message}`);
   }
 }
 
@@ -540,9 +770,9 @@ function onDisconnected() {
   client.polling = false;
   for (const [, p] of client.pending) clearTimeout(p.timer);
   client.pending.clear();
-  setConn('off', 'Disconnected');
+  setConn('off', 'Severed');
   log('device disconnected', true);
-  toast('Disconnected');
+  toast('LINK SEVERED');
   $('app').style.display = 'none';
   $('connectCard').style.display = 'block';
 }
@@ -562,13 +792,17 @@ function setConn(state, label) {
 const app = {
   useF: lsGet('units', 'F') === 'F',
   state: 5, liveTempF: 0, battery: 0, charging: false, dabs: 0,
-  deviceName: '', activeProfile: 0, editSlot: 0,
+  deviceName: '', model: '', fw: '', chamber: null,
+  activeProfile: 0, editSlot: 0,
   profiles: [null, null, null, null], // {name, tempF, timeS}
-  totalTime: 0, remaining: 0,
+  totalTime: 0, remaining: 0, connectedAt: 0,
+  history: [], // [{t: ms, f: tempF}]
 };
 
 const TEMP_MIN_F = 350, TEMP_MAX_F = 620, TEMP_STEP_F = 5;
 const TIME_MIN_S = 15, TIME_MAX_S = 180, TIME_STEP_S = 5;
+const GAUGE_MIN_F = 0, GAUGE_MAX_F = 650;
+const HISTORY_MAX = 160;
 
 function fmtTemp(tF) {
   if (!tF) return '--';
@@ -583,6 +817,10 @@ async function initialReads() {
     app.deviceName = dec.decode(nameB).replace(/\0+$/, '').trim();
     if (/proxy/i.test(app.deviceName)) client.isProxy = true;
   }
+  const info = await readDeviceInfo();
+  app.fw = info.fw;
+  app.model = resolveModel(`${client.device && client.device.name || ''} ${app.deviceName}`, info.model);
+
   for (let s = 0; s < 4; s++) await readProfile(s);
   const ap = await readPath(PATH.ACTIVE_PROF);
   if (ap && ap.length) app.activeProfile = Math.min(3, ap[0]);
@@ -617,7 +855,14 @@ async function pollFast() {
   const st = await readPath(PATH.STATE);
   if (st && st.length) app.state = st[0];
   const t = await readPath(PATH.CHAMBER_TEMP);
-  if (t) { const f = parseTemp(t); if (f > 0) app.liveTempF = f; }
+  if (t) {
+    const f = parseTemp(t);
+    if (f > 0) {
+      app.liveTempF = f;
+      app.history.push({ t: Date.now(), f });
+      while (app.history.length > HISTORY_MAX) app.history.shift();
+    }
+  }
   if (HEATING_STATES.includes(app.state)) {
     const elapB = await readPath(PATH.ELAPSED);
     const totB = await readPath(PATH.TOTAL);
@@ -640,6 +885,8 @@ async function pollSlow() {
   if (dabs) app.dabs = parseDabs(dabs);
   const ap = await readPath(PATH.ACTIVE_PROF);
   if (ap && ap.length) app.activeProfile = Math.min(3, ap[0]);
+  const ch = await readPath(PATH.CHAMBER_TYPE);
+  if (ch && ch.length) app.chamber = ch[0];
 }
 
 let slowCounter = 0;
@@ -658,30 +905,181 @@ async function startPolling() {
   }
 }
 
+/* ---------------- gauge rendering ---------------- */
+const GAUGE = { cx: 150, cy: 140, r: 108, startDeg: 135, sweepDeg: 270 };
+function polar(deg, r) {
+  const rad = (deg - 90) * Math.PI / 180;
+  return [GAUGE.cx + r * Math.sin(rad + Math.PI / 2) * 0 + r * Math.cos(rad), GAUGE.cy + r * Math.sin(rad)];
+}
+function arcPoint(deg, r) {
+  const rad = deg * Math.PI / 180;
+  return [GAUGE.cx + r * Math.cos(rad), GAUGE.cy + r * Math.sin(rad)];
+}
+function arcPath(fromDeg, toDeg, r) {
+  const [x1, y1] = arcPoint(fromDeg, r);
+  const [x2, y2] = arcPoint(toDeg, r);
+  const large = (toDeg - fromDeg) > 180 ? 1 : 0;
+  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+function tempToDeg(tF) {
+  const frac = Math.min(1, Math.max(0, (tF - GAUGE_MIN_F) / (GAUGE_MAX_F - GAUGE_MIN_F)));
+  return 90 + GAUGE.startDeg - 90 + frac * GAUGE.sweepDeg; // 135deg -> 405deg in SVG angle space
+}
+function buildGauge() {
+  $('gaugeTrack').setAttribute('d', arcPath(135, 405, GAUGE.r));
+  const ticks = $('gaugeTicks');
+  let html = '';
+  for (let tF = GAUGE_MIN_F; tF <= GAUGE_MAX_F; tF += 50) {
+    const deg = tempToDeg(tF);
+    const major = tF % 100 === 0;
+    const [x1, y1] = arcPoint(deg, GAUGE.r + 10);
+    const [x2, y2] = arcPoint(deg, GAUGE.r + (major ? 20 : 15));
+    html += `<line class="tick" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+    if (major && tF % 200 === 0) {
+      const [lx, ly] = arcPoint(deg, GAUGE.r + 30);
+      html += `<text class="tick-label" x="${lx.toFixed(1)}" y="${(ly + 3).toFixed(1)}" text-anchor="middle">${tF}</text>`;
+    }
+  }
+  ticks.innerHTML = html;
+}
+function renderGauge() {
+  const tF = app.liveTempF;
+  if (tF > 0) {
+    $('gaugeFill').setAttribute('d', arcPath(135, Math.max(135.5, tempToDeg(tF)), GAUGE.r));
+  } else {
+    $('gaugeFill').setAttribute('d', '');
+  }
+  $('gaugeTemp').textContent = fmtTemp(tF);
+  $('gaugeUnit').textContent = unitStr();
+  const [label, color] = STATES[app.state] || [`STATE ${app.state}`, '#6b8699'];
+  const gs = $('gaugeState');
+  gs.textContent = label;
+  gs.setAttribute('fill', color);
+  const prof = app.profiles[app.activeProfile];
+  if (prof && prof.tempF) {
+    const deg = tempToDeg(prof.tempF);
+    const [x1, y1] = arcPoint(deg, GAUGE.r - 9);
+    const [x2, y2] = arcPoint(deg, GAUGE.r + 9);
+    const tick = $('targetTick');
+    tick.setAttribute('x1', x1); tick.setAttribute('y1', y1);
+    tick.setAttribute('x2', x2); tick.setAttribute('y2', y2);
+    $('gaugeTarget').textContent = `TGT ${fmtTemp(prof.tempF)}${unitStr()}`;
+  }
+}
+
+/* ---------------- sparkline rendering ---------------- */
+const SPARK = { w: 600, h: 140, pad: 8 };
+function sparkScale() {
+  const hist = app.history;
+  if (hist.length < 2) return null;
+  let min = Infinity, max = -Infinity;
+  for (const p of hist) { if (p.f < min) min = p.f; if (p.f > max) max = p.f; }
+  if (max - min < 10) { const mid = (max + min) / 2; min = mid - 5; max = mid + 5; }
+  return { min, max,
+    x: i => SPARK.pad + (i / (HISTORY_MAX - 1)) * (SPARK.w - 2 * SPARK.pad),
+    y: f => SPARK.h - SPARK.pad - ((f - min) / (max - min)) * (SPARK.h - 2 * SPARK.pad) };
+}
+function renderSpark() {
+  const hist = app.history;
+  const sc = sparkScale();
+  if (!sc) return;
+  const off = HISTORY_MAX - hist.length;
+  let d = '';
+  hist.forEach((p, i) => { d += `${i ? 'L' : 'M'}${sc.x(off + i).toFixed(1)},${sc.y(p.f).toFixed(1)} `; });
+  $('sparkLine').setAttribute('d', d);
+  const x0 = sc.x(off), xN = sc.x(HISTORY_MAX - 1);
+  $('sparkArea').setAttribute('d', `${d} L${xN.toFixed(1)},${SPARK.h - SPARK.pad} L${x0.toFixed(1)},${SPARK.h - SPARK.pad} Z`);
+  $('sparkMin').textContent = `${fmtTemp(sc.min)}${unitStr()}`;
+  $('sparkMax').textContent = `${fmtTemp(sc.max)}${unitStr()}`;
+  $('sparkNow').textContent = `${fmtTemp(hist[hist.length - 1].f)}${unitStr()}`;
+  if (!$('sparkGrid').childNodes.length) {
+    let g = '';
+    for (let i = 1; i < 4; i++) {
+      const y = (SPARK.h / 4) * i;
+      g += `<line x1="0" y1="${y}" x2="${SPARK.w}" y2="${y}" stroke="rgba(39,215,245,0.07)" stroke-width="1"/>`;
+    }
+    $('sparkGrid').innerHTML = g;
+  }
+}
+function sparkHover(evt) {
+  const hist = app.history;
+  const sc = sparkScale();
+  if (!sc) return;
+  const svg = $('spark');
+  const rect = svg.getBoundingClientRect();
+  const xView = (evt.clientX - rect.left) / rect.width * SPARK.w;
+  const off = HISTORY_MAX - hist.length;
+  let best = 0, bestD = Infinity;
+  hist.forEach((p, i) => {
+    const dx = Math.abs(sc.x(off + i) - xView);
+    if (dx < bestD) { bestD = dx; best = i; }
+  });
+  const p = hist[best];
+  const cx = sc.x(off + best), cy = sc.y(p.f);
+  $('sparkCursor').setAttribute('x1', cx); $('sparkCursor').setAttribute('x2', cx);
+  $('sparkDot').setAttribute('cx', cx); $('sparkDot').setAttribute('cy', cy);
+  const tip = $('sparkTip');
+  const ago = Math.round((Date.now() - p.t) / 1000);
+  tip.textContent = `${fmtTemp(p.f)}${unitStr()} · ${ago}s ago`;
+  tip.style.display = 'block';
+  const px = (cx / SPARK.w) * rect.width;
+  tip.style.left = `${Math.min(rect.width - 110, Math.max(4, px + 8))}px`;
+  tip.style.top = '28px';
+}
+function sparkLeave() {
+  $('sparkTip').style.display = 'none';
+  $('sparkCursor').setAttribute('x1', -10); $('sparkCursor').setAttribute('x2', -10);
+  $('sparkDot').setAttribute('cx', -10);
+}
+
 /* ---------------- rendering ---------------- */
 function render() {
-  $('bigTemp').innerHTML = `${fmtTemp(app.liveTempF)}<small id="unitLabel">${unitStr()}</small>`;
-  const [label, color] = STATES[app.state] || [`State ${app.state}`, '#8b93a7'];
-  const badge = $('stateBadge');
-  badge.textContent = label;
-  const heat = [7, 8].includes(app.state);
-  badge.className = heat ? 'heat' : '';
-  badge.style.background = heat ? color : 'var(--card2)';
-  badge.style.color = heat ? '#fff' : color;
+  renderGauge();
+  renderSpark();
 
+  const [label, color] = STATES[app.state] || [`STATE ${app.state}`, '#6b8699'];
+
+  // hologram callouts + LED band
+  $('calloutState').textContent = label;
+  $('calloutState').setAttribute('fill', color);
+  $('calloutBatt').textContent = `${app.battery}%${app.charging ? ' ⚡' : ''}`;
+  $('calloutTemp').textContent = `${fmtTemp(app.liveTempF)}${unitStr()}`;
+  $('ledBand').setAttribute('stroke', [7, 8, 12].includes(app.state) ? color : '#27d7f5');
+
+  // identity
+  $('modelName').textContent = app.model || '—';
+  const subBits = [];
+  if (app.deviceName) subBits.push(`"${app.deviceName}"`);
+  if (app.fw) subBits.push(`FW ${app.fw}`);
+  if (app.chamber !== null && CHAMBERS[app.chamber]) subBits.push(`${CHAMBERS[app.chamber]} CHAMBER`);
+  $('modelSub').textContent = subBits.join(' · ') || 'LINKED';
+
+  // session countdown
   const showBar = HEATING_STATES.includes(app.state) && app.totalTime > 0;
-  $('sessionBar').style.display = showBar ? 'block' : 'none';
-  $('sessionTime').style.display = showBar ? 'block' : 'none';
+  $('sessionRow').style.display = showBar ? 'block' : 'none';
   if (showBar) {
     const pct = 100 * (1 - app.remaining / app.totalTime);
     $('sessionFill').style.width = `${Math.min(100, Math.max(0, pct))}%`;
-    $('sessionTime').textContent = `${app.remaining}s remaining`;
+    $('sessionTime').textContent = `T-${app.remaining}s`;
   }
 
-  $('statBattery').textContent = `${app.battery}%`;
-  $('statBatteryLbl').textContent = app.charging ? 'Charging ⚡' : 'Battery';
+  // tiles
+  $('statBattery').innerHTML = `${app.battery}<small>%</small>`;
+  $('battLbl').textContent = app.charging ? 'Power Cell ⚡ charging' : 'Power Cell';
+  const bar = $('battBar');
+  if (!bar.childNodes.length) for (let i = 0; i < 10; i++) bar.appendChild(document.createElement('i'));
+  [...bar.children].forEach((seg, i) => {
+    seg.className = i < Math.round(app.battery / 10) ? 'f' + (app.battery <= 20 ? ' low' : '') : '';
+  });
   $('statDabs').textContent = app.dabs ? app.dabs.toLocaleString() : '--';
-  $('statName').textContent = app.deviceName || client.device && client.device.name || '--';
+  $('statChamber').textContent = app.chamber !== null ? (CHAMBERS[app.chamber] || `TYPE ${app.chamber}`) : '--';
+  $('statFw').textContent = app.fw || '--';
+  const prof = app.profiles[app.activeProfile];
+  $('statTarget').textContent = prof && prof.tempF ? `${fmtTemp(prof.tempF)}${unitStr()}` : '--';
+  if (app.connectedAt) {
+    const s = Math.floor((Date.now() - app.connectedAt) / 1000);
+    $('statUptime').textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  }
 
   // profiles
   const wrap = $('profiles');
@@ -698,20 +1096,20 @@ function render() {
   });
 
   // editor
-  const p = app.profiles[app.editSlot];
-  $('editor').style.display = p ? 'block' : 'none';
-  if (p) {
-    $('editTitle').textContent = `Edit: ${p.name}`;
-    $('editTemp').textContent = p.tempF ? `${fmtTemp(p.tempF)}${unitStr()}` : '--';
-    $('editTime').textContent = p.timeS ? `${p.timeS}s` : '--';
+  const ep = app.profiles[app.editSlot];
+  $('editor').style.display = ep ? 'block' : 'none';
+  if (ep) {
+    $('editTitle').textContent = `Calibrate: ${ep.name}`;
+    $('editTemp').textContent = ep.tempF ? `${fmtTemp(ep.tempF)}${unitStr()}` : '--';
+    $('editTime').textContent = ep.timeS ? `${ep.timeS}s` : '--';
   }
-  $('btnUnits').textContent = app.useF ? 'Show °C' : 'Show °F';
+  $('btnUnits').textContent = app.useF ? 'Units °C' : 'Units °F';
 }
 
 /* ---------------- actions ---------------- */
 async function modeCommand(code, label) {
   const ok = await writePath(PATH.MODE_CONTROL, Uint8Array.from([code]));
-  toast(ok ? label : `${label} failed`);
+  toast(ok ? label : `${label} FAILED`);
   if (ok) setTimeout(() => pollFast().then(render), 400);
 }
 
@@ -719,7 +1117,7 @@ async function selectProfile(slot) {
   app.editSlot = slot;
   if (slot !== app.activeProfile) {
     const ok = await writePath(PATH.ACTIVE_PROF, Uint8Array.from([slot]));
-    if (ok) { app.activeProfile = slot; toast(`Profile: ${app.profiles[slot] ? app.profiles[slot].name : slot + 1}`); }
+    if (ok) { app.activeProfile = slot; toast(`ARMED: ${app.profiles[slot] ? app.profiles[slot].name.toUpperCase() : slot + 1}`); }
   }
   render();
 }
@@ -736,7 +1134,7 @@ function nudgeTemp(dir) {
     const c = fToC(p.tempF);
     const payload = client.isProxy ? u32le(Math.round(c * 10)) : f32le(c);
     const ok = await writePath(PATH.profTemp(app.editSlot), payload);
-    toast(ok ? `Set ${fmtTemp(p.tempF)}${unitStr()}` : 'Temp write failed');
+    toast(ok ? `SET ${fmtTemp(p.tempF)}${unitStr()}` : 'TEMP WRITE FAILED');
   }, 600);
 }
 function nudgeTime(dir) {
@@ -747,7 +1145,7 @@ function nudgeTime(dir) {
   clearTimeout(timeDebounce);
   timeDebounce = setTimeout(async () => {
     const ok = await writePath(PATH.profTime(app.editSlot), u32le(p.timeS));
-    toast(ok ? `Duration ${p.timeS}s` : 'Duration write failed');
+    toast(ok ? `DURATION ${p.timeS}s` : 'DURATION WRITE FAILED');
   }, 600);
 }
 
@@ -755,20 +1153,20 @@ function nudgeTime(dir) {
 $('btnConnect').addEventListener('click', () => connect(false));
 $('btnConnectAll').addEventListener('click', () => connect(true));
 $('btnDisconnect').addEventListener('click', disconnect);
-$('btnStart').addEventListener('click', () => modeCommand(MC.START, 'Session started'));
-$('btnStop').addEventListener('click', () => modeCommand(MC.STOP, 'Session stopped'));
-$('btnBoost').addEventListener('click', () => modeCommand(MC.BOOST, 'Boost!'));
+$('btnStart').addEventListener('click', () => modeCommand(MC.START, 'IGNITION'));
+$('btnStop').addEventListener('click', () => modeCommand(MC.STOP, 'ABORTED'));
+$('btnBoost').addEventListener('click', () => modeCommand(MC.BOOST, 'BOOST ENGAGED'));
 $('tempUp').addEventListener('click', () => nudgeTemp(1));
 $('tempDown').addEventListener('click', () => nudgeTemp(-1));
 $('timeUp').addEventListener('click', () => nudgeTime(1));
 $('timeDown').addEventListener('click', () => nudgeTime(-1));
 $('swStealth').addEventListener('change', async e => {
   const ok = await writePath(PATH.STEALTH, Uint8Array.from([e.target.checked ? 1 : 0]));
-  toast(ok ? (e.target.checked ? 'Stealth on' : 'Stealth off') : 'Stealth failed');
+  toast(ok ? (e.target.checked ? 'STEALTH ON' : 'STEALTH OFF') : 'STEALTH FAILED');
 });
 $('swLantern').addEventListener('change', async e => {
   const ok = await writePath(PATH.LANTERN_CMD, Uint8Array.from([e.target.checked ? 1 : 0]));
-  toast(ok ? (e.target.checked ? 'Lantern on' : 'Lantern off') : 'Lantern failed');
+  toast(ok ? (e.target.checked ? 'LANTERN ON' : 'LANTERN OFF') : 'LANTERN FAILED');
 });
 let brightDebounce = null;
 $('brightSlider').addEventListener('input', e => {
@@ -781,19 +1179,65 @@ $('brightSlider').addEventListener('input', e => {
 $('btnUnits').addEventListener('click', () => {
   app.useF = !app.useF;
   lsSet('units', app.useF ? 'F' : 'C');
+  buildGauge();
   render();
 });
 $('btnLog').addEventListener('click', () => {
   logEl.style.display = logEl.style.display === 'block' ? 'none' : 'block';
 });
+$('spark').addEventListener('pointermove', sparkHover);
+$('spark').addEventListener('pointerdown', sparkHover);
+$('spark').addEventListener('pointerleave', sparkLeave);
 
+/* ---------------- demo mode (#demo): preview UI with simulated telemetry ---------------- */
+function startDemo() {
+  app.model = 'Peak Pro V2';
+  app.deviceName = 'My Peak';
+  app.fw = 'AF';
+  app.chamber = 4;
+  app.battery = 72;
+  app.charging = false;
+  app.dabs = 1337;
+  app.state = 8;
+  app.activeProfile = 1;
+  app.editSlot = 1;
+  app.connectedAt = Date.now() - 83000;
+  app.totalTime = 75; app.remaining = 42;
+  app.profiles = [
+    { name: 'Low & Slow', tempF: 485, timeS: 90 },
+    { name: 'Daily', tempF: 530, timeS: 75 },
+    { name: 'Flavor', tempF: 500, timeS: 80 },
+    { name: 'Blast Off', tempF: 590, timeS: 60 },
+  ];
+  const now = Date.now();
+  for (let i = 0; i < HISTORY_MAX; i++) {
+    const t = i / HISTORY_MAX;
+    const f = 95 + 440 * Math.max(0, Math.sin(Math.min(1, t * 1.4) * Math.PI / 2)) + Math.sin(i * 0.7) * 6;
+    app.history.push({ t: now - (HISTORY_MAX - i) * 1100, f });
+  }
+  app.liveTempF = app.history[app.history.length - 1].f;
+  $('connectCard').style.display = 'none';
+  $('app').style.display = 'block';
+  setConn('on', 'Demo');
+  render();
+  setInterval(() => {
+    app.liveTempF = 520 + Math.sin(Date.now() / 3000) * 14;
+    app.history.push({ t: Date.now(), f: app.liveTempF });
+    while (app.history.length > HISTORY_MAX) app.history.shift();
+    app.remaining = Math.max(0, app.remaining - 1.1);
+    render();
+  }, 1100);
+}
+
+buildGauge();
+if (location.hash === '#demo') startDemo();
 if (!navigator.bluetooth) {
   $('noBle').style.display = 'block';
   $('btnConnect').disabled = true;
   $('btnConnectAll').disabled = true;
   $('btnConnect').style.opacity = '0.4';
 }
-log(`Peak Remote loaded. Web Bluetooth: ${navigator.bluetooth ? 'available' : 'NOT available'}`);
+log(`Peak HUD loaded. Web Bluetooth: ${navigator.bluetooth ? 'available' : 'NOT available'}`);
 </script>
 </body>
 </html>
