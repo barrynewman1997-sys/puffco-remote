@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Peak Remote</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --card: #161a22;
+    --card2: #1d2230;
+    --border: #2a3040;
+    --text: #e8ebf2;
+    --muted: #8b93a7;
+    --green: #2ecc71;
+    --amber: #f5a623;
+    --red: #e74c3c;
+    --blue: #4a90d9;
+    --accent: #7c5cff;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    max-width: 480px;
+    margin: 0 auto;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  header h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: 0.3px; }
+  .conn-pill {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--card); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 999px; font-size: 13px; color: var(--muted);
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .dot.busy { background: var(--amber); }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  }
+
+  /* Hero */
+  #hero { text-align: center; padding: 22px 16px; }
+  #bigTemp { font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+  #bigTemp small { font-size: 26px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+  #stateBadge {
+    display: inline-block; margin-top: 10px; padding: 5px 14px; border-radius: 999px;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    background: var(--card2); color: var(--muted); border: 1px solid var(--border);
+  }
+  #stateBadge.heat { color: #fff; border-color: transparent; }
+  #sessionBar { height: 6px; background: var(--card2); border-radius: 3px; margin-top: 14px; overflow: hidden; display: none; }
+  #sessionFill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--amber), var(--red)); transition: width 0.9s linear; }
+  #sessionTime { font-size: 13px; color: var(--muted); margin-top: 6px; display: none; }
+
+  /* Action buttons */
+  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .actions button {
+    padding: 18px 0; border: none; border-radius: 14px; font-size: 16px; font-weight: 800;
+    color: #fff; letter-spacing: 0.5px; cursor: pointer; transition: transform 0.06s, opacity 0.2s;
+  }
+  .actions button:active { transform: scale(0.96); }
+  .actions button:disabled { opacity: 0.35; }
+  #btnStart { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+  #btnBoost { background: linear-gradient(135deg, #e67e22, #f5a623); }
+  #btnStop  { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+
+  /* Stat row */
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
+  .stat .v { font-size: 20px; font-weight: 800; }
+  .stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+
+  /* Profiles */
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin: 18px 2px 10px; font-weight: 700; }
+  .profiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .profile {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  }
+  .profile.active { border-color: var(--accent); background: linear-gradient(180deg, rgba(124,92,255,0.12), var(--card)); }
+  .profile .pname { font-size: 14px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .profile .ptemp { font-size: 22px; font-weight: 800; }
+  .profile .ptime { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Editor */
+  #editor { display: none; }
+  .edit-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+  .edit-row .label { font-size: 14px; color: var(--muted); }
+  .stepper { display: flex; align-items: center; gap: 14px; }
+  .stepper button {
+    width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--card2); color: var(--text); font-size: 22px; font-weight: 700; cursor: pointer;
+  }
+  .stepper button:active { background: var(--border); }
+  .stepper .val { font-size: 18px; font-weight: 800; min-width: 74px; text-align: center; }
+
+  /* Toggles */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+  .toggle-row + .toggle-row { border-top: 1px solid var(--border); }
+  .toggle-row .label { font-size: 15px; }
+  .switch { position: relative; width: 52px; height: 30px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider-sw {
+    position: absolute; inset: 0; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 999px; cursor: pointer; transition: background 0.2s;
+  }
+  .slider-sw::before {
+    content: ""; position: absolute; width: 24px; height: 24px; left: 2px; top: 2px;
+    background: var(--muted); border-radius: 50%; transition: transform 0.2s, background 0.2s;
+  }
+  .switch input:checked + .slider-sw { background: var(--accent); border-color: var(--accent); }
+  .switch input:checked + .slider-sw::before { transform: translateX(22px); background: #fff; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 30px; }
+
+  /* Connect screen */
+  #connectCard { text-align: center; padding: 30px 20px; }
+  #connectCard p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .big-btn {
+    width: 100%; padding: 18px; border: none; border-radius: 14px; margin-top: 10px;
+    background: linear-gradient(135deg, #6a4df0, #8c6cff); color: #fff;
+    font-size: 17px; font-weight: 800; letter-spacing: 0.5px; cursor: pointer;
+  }
+  .big-btn:active { transform: scale(0.98); }
+  .ghost-btn {
+    width: 100%; padding: 13px; border: 1px solid var(--border); border-radius: 14px; margin-top: 10px;
+    background: transparent; color: var(--muted); font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  #noBle { display: none; background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.4); border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.5; margin-top: 14px; text-align: left; }
+
+  /* Footer / log */
+  footer { display: flex; gap: 10px; margin-top: 18px; }
+  footer button { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+  #log {
+    display: none; background: #0a0c10; border: 1px solid var(--border); border-radius: 12px;
+    margin-top: 10px; padding: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 11px;
+    line-height: 1.6; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    color: #9aa3b8; user-select: text; -webkit-user-select: text;
+  }
+  #log .err { color: var(--red); }
+  #toast {
+    position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); left: 50%; transform: translateX(-50%);
+    background: var(--card2); border: 1px solid var(--border); color: var(--text);
+    padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; transition: opacity 0.25s; pointer-events: none;
+    max-width: 90vw; text-align: center;
+  }
+  #app { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Peak Remote</h1>
+  <div class="conn-pill"><div class="dot" id="connDot"></div><span id="connLabel">Offline</span></div>
+</header>
+
+<!-- CONNECT SCREEN -->
+<div class="card" id="connectCard">
+  <div style="font-size:44px; margin-bottom:8px;">&#128293;</div>
+  <p>Wake your Peak Pro (tap its button once so it's not asleep), then connect.</p>
+  <button class="big-btn" id="btnConnect">Connect to Peak Pro</button>
+  <button class="ghost-btn" id="btnConnectAll">Device not showing? Scan all devices</button>
+  <div id="noBle">
+    <b>Bluetooth is not available in this browser.</b><br>
+    On iPhone, open this page in the free <b>Bluefy</b> browser (App Store) &mdash; Safari and Chrome on iOS block Web Bluetooth.
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="card" id="hero">
+    <div id="bigTemp">--<small id="unitLabel">&deg;F</small></div>
+    <div id="stateBadge">Idle</div>
+    <div id="sessionBar"><div id="sessionFill"></div></div>
+    <div id="sessionTime"></div>
+  </div>
+
+  <div class="actions">
+    <button id="btnStart">START</button>
+    <button id="btnBoost">BOOST</button>
+    <button id="btnStop">STOP</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v" id="statBattery">--%</div><div class="l" id="statBatteryLbl">Battery</div></div>
+    <div class="stat"><div class="v" id="statDabs">--</div><div class="l">Total Dabs</div></div>
+    <div class="stat"><div class="v" id="statName" style="font-size:14px; line-height:20px;">--</div><div class="l">Device</div></div>
+  </div>
+
+  <h2>Heat Profiles</h2>
+  <div class="profiles" id="profiles"></div>
+
+  <div class="card" id="editor">
+    <div class="edit-row">
+      <span class="label" id="editTitle">Edit profile</span>
+    </div>
+    <div class="edit-row">
+      <span class="label">Temperature</span>
+      <div class="stepper">
+        <button id="tempDown">&minus;</button>
+        <span class="val" id="editTemp">--</span>
+        <button id="tempUp">+</button>
+      </div>
+    </div>
+    <div class="edit-row">
+      <span class="label">Duration</span>
+      <div class="stepper">
+        <button id="timeDown">&minus;</button>
+        <span class="val" id="editTime">--</span>
+        <button id="timeUp">+</button>
+      </div>
+    </div>
+  </div>
+
+  <h2>Device</h2>
+  <div class="card">
+    <div class="toggle-row">
+      <span class="label">Stealth mode (lights off)</span>
+      <label class="switch"><input type="checkbox" id="swStealth"><span class="slider-sw"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span class="label">Lantern (ambient light)</span>
+      <label class="switch"><input type="checkbox" id="swLantern"><span class="slider-sw"></span></label>
+    </div>
+    <div class="toggle-row" style="display:block;">
+      <span class="label">LED brightness</span>
+      <input type="range" id="brightSlider" min="5" max="255" value="255">
+    </div>
+  </div>
+
+  <footer>
+    <button id="btnUnits">Show &deg;C</button>
+    <button id="btnLog">Debug Log</button>
+    <button id="btnDisconnect">Disconnect</button>
+  </footer>
+</div>
+
+<div id="log"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Lorax BLE protocol for Puffco Peak Pro / Proxy
+   Ported from the public reverse-engineering work:
+   - github.com/Fr0st3h/Puffco-Reverse-Engineering-Writeup
+   - github.com/SoyMilkIsOk/puffco-py
+   ============================================================ */
+
+const LORAX_SERVICE = 'e276967f-ea8a-478a-a92e-d78f5dd15dd5';
+const CHAR_CMD      = '60133d5c-5727-4f2c-9697-d842c5292a3c'; // write w/o response
+const CHAR_REPLY    = '8dc5ec05-8f7d-45ad-99db-3fbde65dbd9c'; // notify
+const DEVINFO_SERVICE = 0x180a;
+
+const MASTER_KEY = Uint8Array.from([
+  0x64,0xc6,0x45,0x62,0x56,0xf2,0x6f,0x5b,
+  0x1c,0xa1,0x27,0x37,0xa5,0xdd,0x71,0xfb]);
+
+const OP = { GET_SEED: 0x00, UNLOCK: 0x01, READ_SHORT: 0x10, WRITE_SHORT: 0x11 };
+
+const PATH = {
+  STATE:        '/p/app/stat/id',
+  ELAPSED:      '/p/app/stat/elap',
+  TOTAL:        '/p/app/stat/tott',
+  MODE_CONTROL: '/p/app/mc',
+  CHAMBER_TEMP: '/p/app/htr/temp',
+  BATTERY_SOC:  '/p/bat/soc',
+  CHARGE_STAT:  '/p/bat/chg/stat',
+  DABS:         '/p/app/odom/0/nc',
+  DEVICE_NAME:  '/u/sys/name',
+  ACTIVE_PROF:  '/p/app/hcs',
+  STEALTH:      '/u/app/ui/stlm',
+  LANTERN_CMD:  '/p/app/ltrn/cmd',
+  BRIGHTNESS:   '/u/app/ui/brt',
+  profName: s => `/u/app/hc/${s}/name`,
+  profTemp: s => `/u/app/hc/${s}/temp`,
+  profTime: s => `/u/app/hc/${s}/time`,
+};
+
+const MC = { START: 0x07, STOP: 0x08, BOOST: 0x09 };
+
+// Operating states (firmware enum)
+const STATES = {
+  0:['Disconnected','#8b93a7'], 1:['Off','#8b93a7'], 2:['Booting','#8b93a7'],
+  3:['Sleep','#8b93a7'], 5:['Idle','#8b93a7'], 6:['Temp Select','#4a90d9'],
+  7:['Preheating','#f5a623'], 8:['Active','#2ecc71'], 9:['Fading','#4a90d9'],
+  10:['Ready','#2ecc71'], 11:['Cooldown','#4a90d9'], 12:['Error','#e74c3c'],
+  13:['Shutdown','#8b93a7'],
+};
+const HEATING_STATES = [6,7,8,9,10];
+
+/* ---------------- logging / UI helpers ---------------- */
+const $ = id => document.getElementById(id);
+const logEl = $('log');
+function log(msg, isErr) {
+  const line = document.createElement('div');
+  if (isErr) line.className = 'err';
+  line.textContent = `${new Date().toTimeString().slice(0,8)} ${msg}`;
+  logEl.appendChild(line);
+  while (logEl.childNodes.length > 300) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+}
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+/* ---------------- SHA-256 (crypto.subtle + pure-JS fallback) ---------------- */
+async function sha256(bytes) {
+  if (window.crypto && crypto.subtle && crypto.subtle.digest) {
+    try {
+      const d = await crypto.subtle.digest('SHA-256', bytes);
+      return new Uint8Array(d);
+    } catch (e) { /* fall through to JS impl */ }
+  }
+  return sha256js(bytes);
+}
+function sha256js(data) { // compact pure-JS SHA-256, used only if crypto.subtle is unavailable
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  let H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const len = data.length, bitLen = len * 8;
+  const padded = new Uint8Array((((len + 8) >> 6) + 1) << 6);
+  padded.set(data); padded[len] = 0x80;
+  const dv = new DataView(padded.buffer);
+  dv.setUint32(padded.length - 4, bitLen >>> 0);
+  dv.setUint32(padded.length - 8, Math.floor(bitLen / 0x100000000));
+  const w = new Int32Array(64);
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let i = 0; i < padded.length; i += 64) {
+    for (let t = 0; t < 16; t++) w[t] = dv.getInt32(i + t * 4);
+    for (let t = 16; t < 64; t++) {
+      const s0 = rotr(w[t-15],7) ^ rotr(w[t-15],18) ^ (w[t-15] >>> 3);
+      const s1 = rotr(w[t-2],17) ^ rotr(w[t-2],19) ^ (w[t-2] >>> 10);
+      w[t] = (w[t-16] + s0 + w[t-7] + s1) | 0;
+    }
+    let [a,b,c,d,e,f,g,h] = H;
+    for (let t = 0; t < 64; t++) {
+      const S1 = rotr(e,6) ^ rotr(e,11) ^ rotr(e,25);
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + K[t] + w[t]) | 0;
+      const S0 = rotr(a,2) ^ rotr(a,13) ^ rotr(a,22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) | 0;
+      h=g; g=f; f=e; e=(d+t1)|0; d=c; c=b; b=a; a=(t1+t2)|0;
+    }
+    H = [ (H[0]+a)|0,(H[1]+b)|0,(H[2]+c)|0,(H[3]+d)|0,(H[4]+e)|0,(H[5]+f)|0,(H[6]+g)|0,(H[7]+h)|0 ];
+  }
+  const out = new Uint8Array(32);
+  const odv = new DataView(out.buffer);
+  H.forEach((x, i) => odv.setInt32(i * 4, x));
+  return out;
+}
+
+/* ---------------- binary helpers ---------------- */
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+function concat(...arrays) {
+  const total = arrays.reduce((n, a) => n + a.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const a of arrays) { out.set(a, off); off += a.length; }
+  return out;
+}
+function u16le(n) { return Uint8Array.from([n & 0xff, (n >> 8) & 0xff]); }
+function u32le(n) { return Uint8Array.from([n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff]); }
+function f32le(x) { const b = new Uint8Array(4); new DataView(b.buffer).setFloat32(0, x, true); return b; }
+function readF32(b) { return new DataView(b.buffer, b.byteOffset, b.byteLength).getFloat32(0, true); }
+function readI32(b) { return new DataView(b.buffer, b.byteOffset, b.byteLength).getInt32(0, true); }
+function readU32(b) { return new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(0, true); }
+const cToF = c => c * 9 / 5 + 32;
+const fToC = f => (f - 32) * 5 / 9;
+
+function parseTemp(b) { // -> deg F, 0 if unparseable (mirrors puffco-py parse_temp)
+  if (!b || b.length < 4) return 0;
+  const f = readF32(b);
+  if (f >= 5 && f <= 450) return Math.round(cToF(f) * 10) / 10;
+  const i = readI32(b);
+  if (i >= 50 && i <= 4500) return Math.round(cToF(i / 10) * 10) / 10;
+  if (i >= 5 && i <= 450) return Math.round(cToF(i) * 10) / 10;
+  return 0;
+}
+function parseBattery(b) {
+  if (!b || !b.length) return 0;
+  if (b.length === 1) return Math.min(100, b[0]);
+  if (b.length >= 4) {
+    const i = readU32(b);
+    if (i <= 100) return i;
+    if (i <= 10000) return Math.min(100, Math.round(i / 100));
+    const f = readF32(b);
+    if (f >= 1 && f <= 100) return Math.round(f);
+  }
+  return 0;
+}
+function parseDabs(b) {
+  if (!b || !b.length) return 0;
+  if (b.length >= 4) {
+    const f = readF32(b);
+    if (f >= 1 && f < 1000000 && Number.isInteger(f)) return f;
+    return readU32(b);
+  }
+  if (b.length === 2) return b[0] | (b[1] << 8);
+  return b[0];
+}
+
+/* ---------------- BLE client ---------------- */
+const client = {
+  device: null, server: null, cmdChar: null, replyChar: null,
+  seq: 0, pending: new Map(), queue: Promise.resolve(),
+  connected: false, polling: false, isProxy: false,
+};
+
+function onReply(e) {
+  const dv = e.target.value;
+  if (dv.byteLength < 3) return;
+  const seq = dv.getUint16(0, true);
+  const status = dv.getUint8(2);
+  const payload = new Uint8Array(dv.buffer.slice(dv.byteOffset + 3, dv.byteOffset + dv.byteLength));
+  const p = client.pending.get(seq);
+  if (p) { client.pending.delete(seq); clearTimeout(p.timer); p.resolve({ status, payload }); }
+}
+
+function sendCmd(opcode, payload = new Uint8Array(0), timeoutMs = 2500) {
+  // serialize all commands (device answers one at a time)
+  const task = client.queue.then(() => new Promise((resolve, reject) => {
+    if (!client.connected || !client.cmdChar) return reject(new Error('not connected'));
+    client.seq = (client.seq + 1) & 0xffff; if (client.seq === 0) client.seq = 1;
+    const seq = client.seq;
+    const pkt = concat(u16le(seq), Uint8Array.from([opcode & 0xff]), payload);
+    const timer = setTimeout(() => {
+      client.pending.delete(seq);
+      reject(new Error(`timeout op 0x${opcode.toString(16)}`));
+    }, timeoutMs);
+    client.pending.set(seq, { resolve, timer });
+    const write = client.cmdChar.properties && client.cmdChar.properties.writeWithoutResponse && client.cmdChar.writeValueWithoutResponse
+      ? client.cmdChar.writeValueWithoutResponse(pkt)
+      : client.cmdChar.writeValue(pkt);
+    write.catch(err => { clearTimeout(timer); client.pending.delete(seq); reject(err); });
+  }));
+  client.queue = task.catch(() => {});
+  return task;
+}
+
+async function readPath(path, maxLen = 240) {
+  try {
+    const payload = concat(u16le(0), u16le(maxLen), enc.encode(path));
+    const { status, payload: data } = await sendCmd(OP.READ_SHORT, payload);
+    if (status !== 0) { log(`read ${path} -> status ${status}`, true); return null; }
+    return data;
+  } catch (err) { log(`read ${path} failed: ${err.message}`, true); return null; }
+}
+async function writePath(path, valBytes) {
+  try {
+    const payload = concat(u16le(0), Uint8Array.from([0]), enc.encode(path), Uint8Array.from([0]), valBytes);
+    const { status } = await sendCmd(OP.WRITE_SHORT, payload);
+    if (status !== 0) log(`write ${path} -> status ${status}`, true);
+    return status === 0;
+  } catch (err) { log(`write ${path} failed: ${err.message}`, true); return false; }
+}
+
+async function authenticate() {
+  log('auth: requesting seed...');
+  const { status, payload: seed } = await sendCmd(OP.GET_SEED);
+  if (status !== 0 || seed.length < 16) throw new Error(`seed request failed (status ${status}, len ${seed.length})`);
+  const token = (await sha256(concat(MASTER_KEY, seed.slice(0, 16)))).slice(0, 16);
+  const res = await sendCmd(OP.UNLOCK, token);
+  if (res.status !== 0) throw new Error(`unlock failed (status ${res.status})`);
+  log('auth: handshake OK');
+}
+
+async function connect(scanAll) {
+  if (!navigator.bluetooth) { $('noBle').style.display = 'block'; return; }
+  setConn('busy', 'Scanning...');
+  let opts;
+  if (scanAll) {
+    opts = { acceptAllDevices: true, optionalServices: [LORAX_SERVICE, DEVINFO_SERVICE] };
+  } else {
+    opts = {
+      filters: [
+        { services: [LORAX_SERVICE] },
+        { namePrefix: 'Peak' }, { namePrefix: 'Puffco' },
+        { namePrefix: 'PEAK' }, { namePrefix: 'Proxy' },
+      ],
+      optionalServices: [LORAX_SERVICE, DEVINFO_SERVICE],
+    };
+  }
+  try {
+    const device = await navigator.bluetooth.requestDevice(opts);
+    client.device = device;
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    setConn('busy', 'Connecting...');
+    log(`connecting to "${device.name || device.id}"...`);
+    client.server = await device.gatt.connect();
+    const svc = await client.server.getPrimaryService(LORAX_SERVICE);
+    client.cmdChar = await svc.getCharacteristic(CHAR_CMD);
+    client.replyChar = await svc.getCharacteristic(CHAR_REPLY);
+    client.replyChar.addEventListener('characteristicvaluechanged', onReply);
+    await client.replyChar.startNotifications();
+    client.connected = true;
+    client.isProxy = /proxy/i.test(device.name || '');
+    await authenticate();
+    setConn('on', device.name || 'Connected');
+    $('connectCard').style.display = 'none';
+    $('app').style.display = 'block';
+    toast('Connected');
+    await initialReads();
+    startPolling();
+  } catch (err) {
+    log(`connect failed: ${err.message}`, true);
+    setConn('off', 'Offline');
+    if (!/cancelled|canceled|chooser/i.test(err.message)) toast(`Connect failed: ${err.message}`);
+  }
+}
+
+function onDisconnected() {
+  client.connected = false;
+  client.polling = false;
+  for (const [, p] of client.pending) clearTimeout(p.timer);
+  client.pending.clear();
+  setConn('off', 'Disconnected');
+  log('device disconnected', true);
+  toast('Disconnected');
+  $('app').style.display = 'none';
+  $('connectCard').style.display = 'block';
+}
+
+async function disconnect() {
+  client.polling = false;
+  try { if (client.device && client.device.gatt.connected) client.device.gatt.disconnect(); } catch (e) {}
+}
+
+function setConn(state, label) {
+  const d = $('connDot');
+  d.className = 'dot' + (state === 'on' ? ' on' : state === 'busy' ? ' busy' : '');
+  $('connLabel').textContent = label;
+}
+
+/* ---------------- app state ---------------- */
+const app = {
+  useF: lsGet('units', 'F') === 'F',
+  state: 5, liveTempF: 0, battery: 0, charging: false, dabs: 0,
+  deviceName: '', activeProfile: 0, editSlot: 0,
+  profiles: [null, null, null, null], // {name, tempF, timeS}
+  totalTime: 0, remaining: 0,
+};
+
+const TEMP_MIN_F = 350, TEMP_MAX_F = 620, TEMP_STEP_F = 5;
+const TIME_MIN_S = 15, TIME_MAX_S = 180, TIME_STEP_S = 5;
+
+function fmtTemp(tF) {
+  if (!tF) return '--';
+  return app.useF ? Math.round(tF) : Math.round(fToC(tF));
+}
+function unitStr() { return app.useF ? '°F' : '°C'; }
+
+/* ---------------- device reads ---------------- */
+async function initialReads() {
+  const nameB = await readPath(PATH.DEVICE_NAME);
+  if (nameB && nameB.length) {
+    app.deviceName = dec.decode(nameB).replace(/\0+$/, '').trim();
+    if (/proxy/i.test(app.deviceName)) client.isProxy = true;
+  }
+  for (let s = 0; s < 4; s++) await readProfile(s);
+  const ap = await readPath(PATH.ACTIVE_PROF);
+  if (ap && ap.length) app.activeProfile = Math.min(3, ap[0]);
+  app.editSlot = app.activeProfile;
+
+  const stealthB = await readPath(PATH.STEALTH);
+  if (stealthB && stealthB.length) $('swStealth').checked = stealthB[0] === 1;
+  const brtB = await readPath(PATH.BRIGHTNESS);
+  if (brtB && brtB.length) $('brightSlider').value = brtB[0];
+
+  await pollSlow();
+  await pollFast();
+  render();
+}
+
+async function readProfile(slot) {
+  const nameB = await readPath(PATH.profName(slot));
+  const tempB = await readPath(PATH.profTemp(slot));
+  const timeB = await readPath(PATH.profTime(slot));
+  const p = { name: `Profile ${slot + 1}`, tempF: 0, timeS: 0 };
+  if (nameB && nameB.length) {
+    const n = dec.decode(nameB).replace(/\0+$/, '').trim();
+    if (n) p.name = n;
+  }
+  if (tempB && tempB.length >= 4) p.tempF = parseTemp(tempB);
+  if (timeB && timeB.length >= 4) p.timeS = Math.min(TIME_MAX_S, readU32(timeB));
+  else if (timeB && timeB.length >= 2) p.timeS = timeB[0] | (timeB[1] << 8);
+  app.profiles[slot] = p;
+}
+
+async function pollFast() {
+  const st = await readPath(PATH.STATE);
+  if (st && st.length) app.state = st[0];
+  const t = await readPath(PATH.CHAMBER_TEMP);
+  if (t) { const f = parseTemp(t); if (f > 0) app.liveTempF = f; }
+  if (HEATING_STATES.includes(app.state)) {
+    const elapB = await readPath(PATH.ELAPSED);
+    const totB = await readPath(PATH.TOTAL);
+    if (elapB && totB && elapB.length >= 4 && totB.length >= 4) {
+      let elap = readF32(elapB), tot = readF32(totB);
+      if (!(tot > 0 && tot < 100000)) { elap = readU32(elapB); tot = readU32(totB); }
+      if (tot > 300) { tot /= 1000; elap /= 1000; }
+      app.totalTime = Math.round(tot);
+      app.remaining = Math.max(0, Math.round(tot - elap));
+    }
+  }
+}
+
+async function pollSlow() {
+  const soc = await readPath(PATH.BATTERY_SOC);
+  if (soc) app.battery = parseBattery(soc);
+  const chg = await readPath(PATH.CHARGE_STAT);
+  if (chg && chg.length) app.charging = chg[0] <= 2;
+  const dabs = await readPath(PATH.DABS);
+  if (dabs) app.dabs = parseDabs(dabs);
+  const ap = await readPath(PATH.ACTIVE_PROF);
+  if (ap && ap.length) app.activeProfile = Math.min(3, ap[0]);
+}
+
+let slowCounter = 0;
+async function startPolling() {
+  if (client.polling) return;
+  client.polling = true;
+  slowCounter = 0;
+  while (client.polling && client.connected) {
+    try {
+      await pollFast();
+      if (slowCounter % 8 === 0) await pollSlow();
+      slowCounter++;
+      render();
+    } catch (e) { log(`poll error: ${e.message}`, true); }
+    await new Promise(r => setTimeout(r, 1100));
+  }
+}
+
+/* ---------------- rendering ---------------- */
+function render() {
+  $('bigTemp').innerHTML = `${fmtTemp(app.liveTempF)}<small id="unitLabel">${unitStr()}</small>`;
+  const [label, color] = STATES[app.state] || [`State ${app.state}`, '#8b93a7'];
+  const badge = $('stateBadge');
+  badge.textContent = label;
+  const heat = [7, 8].includes(app.state);
+  badge.className = heat ? 'heat' : '';
+  badge.style.background = heat ? color : 'var(--card2)';
+  badge.style.color = heat ? '#fff' : color;
+
+  const showBar = HEATING_STATES.includes(app.state) && app.totalTime > 0;
+  $('sessionBar').style.display = showBar ? 'block' : 'none';
+  $('sessionTime').style.display = showBar ? 'block' : 'none';
+  if (showBar) {
+    const pct = 100 * (1 - app.remaining / app.totalTime);
+    $('sessionFill').style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    $('sessionTime').textContent = `${app.remaining}s remaining`;
+  }
+
+  $('statBattery').textContent = `${app.battery}%`;
+  $('statBatteryLbl').textContent = app.charging ? 'Charging ⚡' : 'Battery';
+  $('statDabs').textContent = app.dabs ? app.dabs.toLocaleString() : '--';
+  $('statName').textContent = app.deviceName || client.device && client.device.name || '--';
+
+  // profiles
+  const wrap = $('profiles');
+  wrap.innerHTML = '';
+  app.profiles.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'profile' + (i === app.activeProfile ? ' active' : '');
+    const name = p ? p.name : `Profile ${i + 1}`;
+    const temp = p && p.tempF ? `${fmtTemp(p.tempF)}${unitStr()}` : '--';
+    const time = p && p.timeS ? `${p.timeS}s` : '';
+    div.innerHTML = `<div class="pname">${name}</div><div class="ptemp">${temp}</div><div class="ptime">${time}</div>`;
+    div.addEventListener('click', () => selectProfile(i));
+    wrap.appendChild(div);
+  });
+
+  // editor
+  const p = app.profiles[app.editSlot];
+  $('editor').style.display = p ? 'block' : 'none';
+  if (p) {
+    $('editTitle').textContent = `Edit: ${p.name}`;
+    $('editTemp').textContent = p.tempF ? `${fmtTemp(p.tempF)}${unitStr()}` : '--';
+    $('editTime').textContent = p.timeS ? `${p.timeS}s` : '--';
+  }
+  $('btnUnits').textContent = app.useF ? 'Show °C' : 'Show °F';
+}
+
+/* ---------------- actions ---------------- */
+async function modeCommand(code, label) {
+  const ok = await writePath(PATH.MODE_CONTROL, Uint8Array.from([code]));
+  toast(ok ? label : `${label} failed`);
+  if (ok) setTimeout(() => pollFast().then(render), 400);
+}
+
+async function selectProfile(slot) {
+  app.editSlot = slot;
+  if (slot !== app.activeProfile) {
+    const ok = await writePath(PATH.ACTIVE_PROF, Uint8Array.from([slot]));
+    if (ok) { app.activeProfile = slot; toast(`Profile: ${app.profiles[slot] ? app.profiles[slot].name : slot + 1}`); }
+  }
+  render();
+}
+
+let tempDebounce = null, timeDebounce = null;
+function nudgeTemp(dir) {
+  const p = app.profiles[app.editSlot];
+  if (!p) return;
+  const step = app.useF ? TEMP_STEP_F : 3 * 9 / 5; // ~3C steps in C mode
+  p.tempF = Math.min(TEMP_MAX_F, Math.max(TEMP_MIN_F, (p.tempF || 500) + dir * step));
+  render();
+  clearTimeout(tempDebounce);
+  tempDebounce = setTimeout(async () => {
+    const c = fToC(p.tempF);
+    const payload = client.isProxy ? u32le(Math.round(c * 10)) : f32le(c);
+    const ok = await writePath(PATH.profTemp(app.editSlot), payload);
+    toast(ok ? `Set ${fmtTemp(p.tempF)}${unitStr()}` : 'Temp write failed');
+  }, 600);
+}
+function nudgeTime(dir) {
+  const p = app.profiles[app.editSlot];
+  if (!p) return;
+  p.timeS = Math.min(TIME_MAX_S, Math.max(TIME_MIN_S, (p.timeS || 60) + dir * TIME_STEP_S));
+  render();
+  clearTimeout(timeDebounce);
+  timeDebounce = setTimeout(async () => {
+    const ok = await writePath(PATH.profTime(app.editSlot), u32le(p.timeS));
+    toast(ok ? `Duration ${p.timeS}s` : 'Duration write failed');
+  }, 600);
+}
+
+/* ---------------- wire up UI ---------------- */
+$('btnConnect').addEventListener('click', () => connect(false));
+$('btnConnectAll').addEventListener('click', () => connect(true));
+$('btnDisconnect').addEventListener('click', disconnect);
+$('btnStart').addEventListener('click', () => modeCommand(MC.START, 'Session started'));
+$('btnStop').addEventListener('click', () => modeCommand(MC.STOP, 'Session stopped'));
+$('btnBoost').addEventListener('click', () => modeCommand(MC.BOOST, 'Boost!'));
+$('tempUp').addEventListener('click', () => nudgeTemp(1));
+$('tempDown').addEventListener('click', () => nudgeTemp(-1));
+$('timeUp').addEventListener('click', () => nudgeTime(1));
+$('timeDown').addEventListener('click', () => nudgeTime(-1));
+$('swStealth').addEventListener('change', async e => {
+  const ok = await writePath(PATH.STEALTH, Uint8Array.from([e.target.checked ? 1 : 0]));
+  toast(ok ? (e.target.checked ? 'Stealth on' : 'Stealth off') : 'Stealth failed');
+});
+$('swLantern').addEventListener('change', async e => {
+  const ok = await writePath(PATH.LANTERN_CMD, Uint8Array.from([e.target.checked ? 1 : 0]));
+  toast(ok ? (e.target.checked ? 'Lantern on' : 'Lantern off') : 'Lantern failed');
+});
+let brightDebounce = null;
+$('brightSlider').addEventListener('input', e => {
+  clearTimeout(brightDebounce);
+  brightDebounce = setTimeout(async () => {
+    const v = parseInt(e.target.value, 10) & 0xff;
+    await writePath(PATH.BRIGHTNESS, Uint8Array.from([v, v, v, v]));
+  }, 250);
+});
+$('btnUnits').addEventListener('click', () => {
+  app.useF = !app.useF;
+  lsSet('units', app.useF ? 'F' : 'C');
+  render();
+});
+$('btnLog').addEventListener('click', () => {
+  logEl.style.display = logEl.style.display === 'block' ? 'none' : 'block';
+});
+
+if (!navigator.bluetooth) {
+  $('noBle').style.display = 'block';
+  $('btnConnect').disabled = true;
+  $('btnConnectAll').disabled = true;
+  $('btnConnect').style.opacity = '0.4';
+}
+log(`Peak Remote loaded. Web Bluetooth: ${navigator.bluetooth ? 'available' : 'NOT available'}`);
+</script>
+</body>
+</html>
