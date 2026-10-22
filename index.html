@@ -77,25 +77,29 @@
 
   /* ---------- identity / hologram ---------- */
   #identity { text-align: center; }
-  #holoWrap { position: relative; margin: 0 auto; max-width: 320px; }
-  #holo { width: 100%; height: auto; display: block; filter: drop-shadow(0 0 12px rgba(39,215,245,0.35)); }
+  #holoWrap { position: relative; margin: 0 auto; max-width: 560px; background: #000e1f;
+    border: 1px solid rgba(39,215,245,0.22); box-shadow: inset 0 0 44px rgba(39,215,245,0.07), 0 0 18px rgba(39,215,245,0.1); }
+  #holoImg { width: 100%; height: auto; display: block; }
   .holo-anim { animation: flicker 7s infinite; }
   @keyframes flicker {
     0%, 100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.82; }
     94% { opacity: 1; } 96% { opacity: 0.9; } 97% { opacity: 1; }
   }
-  #ledFront { filter: drop-shadow(0 0 4px rgba(39,215,245,0.6)); }
+  #holoScan { position: absolute; left: 2%; right: 2%; top: 5%; height: 2px; pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--glow, #27d7f5), transparent);
+    opacity: 0.5; animation: holoScan 5.5s ease-in-out infinite alternate; }
+  @keyframes holoScan { from { top: 5%; } to { top: 93%; } }
+  .holo-chip { position: absolute; pointer-events: none; }
+  .chip-v { font-family: var(--font-m); font-size: clamp(10px, 2.6vw, 14px); color: var(--ink);
+    letter-spacing: 1px; text-shadow: 0 0 8px rgba(39,215,245,0.55); }
   @media (prefers-reduced-motion: reduce) {
-    .holo-anim, .dot.on { animation: none !important; }
+    .holo-anim, #holoScan, .dot.on { animation: none !important; }
   }
   #modelName {
     font-size: 30px; font-weight: 700; letter-spacing: 6px; text-transform: uppercase;
     color: var(--cyan); text-shadow: 0 0 18px rgba(39,215,245,0.6); margin-top: 4px;
   }
   #modelSub { font-family: var(--font-m); font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 5px; }
-  .holo-label { font-family: var(--font-m); font-size: 8.5px; fill: var(--muted); letter-spacing: 1px; }
-  .holo-value { font-family: var(--font-m); font-size: 10.5px; fill: var(--ink); }
-  .holo-stroke { stroke: var(--cyan); fill: none; }
 
   /* ---------- gauge ---------- */
   #gaugePanel { text-align: center; }
@@ -261,59 +265,19 @@
   <!-- HOLOGRAM / IDENTITY -->
   <div class="panel" id="identity">
     <div class="panel-title">Unit Schematic</div>
-    <div id="holoWrap">
-      <svg id="holo" viewBox="0 0 300 268" class="holo-anim">
-        <defs>
-          <linearGradient id="holoFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#27d7f5" stop-opacity="0.14"/>
-            <stop offset="1" stop-color="#27d7f5" stop-opacity="0.02"/>
-          </linearGradient>
-          <linearGradient id="padGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#27d7f5" stop-opacity="0.5"/>
-            <stop offset="1" stop-color="#27d7f5" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-
-        <!-- projector pad -->
-        <g opacity="0.9">
-          <ellipse cx="150" cy="252" rx="92" ry="12" fill="none" stroke="rgba(39,215,245,0.2)" stroke-width="1" stroke-dasharray="3 7"/>
-          <ellipse cx="150" cy="252" rx="66" ry="8.5" fill="none" stroke="rgba(39,215,245,0.35)" stroke-width="1" stroke-dasharray="14 10"/>
-          <ellipse cx="150" cy="252" rx="40" ry="5" fill="url(#padGrad)" opacity="0.35"/>
-        </g>
-
-        <!-- 3D rotating lathe wireframe of the Peak, built + animated by JS (holoInit/holoFrame) -->
-        <path id="holoBody" fill="url(#holoFill)" opacity="0.7"/>
-        <g id="wireRings" class="holo-stroke"></g>
-        <g id="wireMeridians" class="holo-stroke" stroke-width="1"></g>
-        <g id="wireProfile" class="holo-stroke" stroke-width="1.5"></g>
-        <g id="ledBand" fill="none" stroke="#6b8699">
-          <path id="ledBack" opacity="0.3" stroke-width="1.6"/>
-          <path id="ledFront" stroke-width="2.6"/>
-        </g>
-        <g id="wireChamber" class="holo-stroke" stroke-width="1.1"></g>
-        <g id="wireChamberAmber" fill="none" stroke="#ffb13d"></g>
-        <path id="scanRing" fill="none" stroke="#27d7f5" stroke-width="1.6" opacity="0"/>
-
-        <!-- callouts -->
-        <g stroke="rgba(39,215,245,0.45)" stroke-width="1" fill="none">
-          <circle cx="162" cy="94" r="2.5" fill="#27d7f5" stroke="none"/>
-          <path d="M162 94 L214 58 L246 58"/>
-          <circle cx="120" cy="150" r="2.5" fill="#27d7f5" stroke="none"/>
-          <path d="M120 150 L96 130 L54 130" />
-          <circle cx="184" cy="196" r="2.5" fill="#27d7f5" stroke="none"/>
-          <path d="M184 196 L216 214 L246 214"/>
-        </g>
-        <g text-anchor="start">
-          <text class="holo-label" x="218" y="50">GLASS / STATE</text>
-          <text class="holo-value" x="218" y="68" id="calloutState" fill="#6b8699">STANDBY</text>
-          <text class="holo-label" x="218" y="206">POWER CELL</text>
-          <text class="holo-value" x="218" y="228" id="calloutBatt">--%</text>
-        </g>
-        <g text-anchor="end">
-          <text class="holo-label" x="82" y="122">CHAMBER</text>
-          <text class="holo-value" x="82" y="140" id="calloutTemp">--</text>
-        </g>
-      </svg>
+    <div id="holoWrap" class="holo-anim">
+      <img id="holoImg" src="peak-render.png" alt="Peak schematic render">
+      <div id="holoScan"></div>
+      <!-- live telemetry pinned beneath the render's own callout labels -->
+      <div class="holo-chip" style="left:18.5%; top:23.5%;">
+        <span class="chip-v" id="calloutState">STANDBY</span>
+      </div>
+      <div class="holo-chip" style="left:74%; top:46%;">
+        <span class="chip-v" id="calloutTemp">--</span>
+      </div>
+      <div class="holo-chip" style="left:70%; top:80%;">
+        <span class="chip-v" id="calloutBatt">--%</span>
+      </div>
     </div>
     <div id="modelName">&mdash;</div>
     <div id="modelSub">AWAITING LINK</div>
@@ -1021,10 +985,10 @@ function render() {
 
   // hologram callouts + LED band
   $('calloutState').textContent = label;
-  $('calloutState').setAttribute('fill', color);
+  $('calloutState').style.color = color;
   $('calloutBatt').textContent = `${app.battery}%${app.charging ? ' ⚡' : ''}`;
   $('calloutTemp').textContent = `${fmtTemp(app.liveTempF)}${unitStr()}`;
-  $('ledBand').setAttribute('stroke', [7, 8, 12].includes(app.state) ? color : '#27d7f5');
+  $('holoWrap').style.setProperty('--glow', [7, 8, 12].includes(app.state) ? color : '#27d7f5');
 
   // identity
   $('modelName').textContent = app.model || '—';
@@ -1209,177 +1173,7 @@ function startDemo() {
   }, 1100);
 }
 
-/* ---------------- 3D hologram: rotating loft wireframe of the Peak ---------------- */
-// Traced from the user's reference render: angular glass fin over a swooping base,
-// chamber + amber carb cap riding the front shelf, internal perc cone.
-// Each cross-section ring: [v height, off front-back, a front-back r, b lateral r, tilt]
-const HOLO = {
-  cx: 150, yBot: 236, squash: 0.30, angle: 0.5, meridianN: 12, els: null,
-  body: [
-    [1,   -1.0,  36.0, 34.2, 0],
-    [21,  -1.0,  38.5, 37.0, 0],
-    [45,   0.0,  38.8, 37.3, 0],
-    [70,   2.2,  39.2, 37.3, 0],
-    [82,   6.6,  42.1, 36.2, 0],     // shoulder / chamber shelf (swoosh overhang)
-    [90,  -8.0,  26.6, 16.0, 0],     // glass fin begins
-    [106, -10.4, 22.6, 12.7, 0],
-    [126, -14.2, 17.5,  9.5, 0],
-    [147, -17.4, 13.0,  6.9, 0],
-    [167, -19.7,  9.3,  5.0, 0],
-    [187, -21.1,  6.6,  3.6, 0],
-    [197, -22.7,  7.2,  4.7, -0.2],
-    [203, -23.5,  8.6,  6.5, -0.45], // angled mouthpiece rim
-  ],
-  cone: [ // internal perc cone, visible through the glass
-    [81, -15.5, 14.4, 9.0, 0], [116, -19.5, 10.0, 6.5, 0], [156, -20.6, 3.9, 3.0, 0],
-  ],
-  chamber: { off: 32, rings: [[82, 15.5], [96, 15.5], [104, 14.0]], band: [87, 15.8],
-             cap: [[108, 11], [114, 12.5], [117, 9]] },
-};
-const SVGNS = 'http://www.w3.org/2000/svg';
-// one vertex of a cross-section ring, rotated about the vertical axis and projected
-function secPt(v, off, a, b, tilt, phi, cosT, sinT) {
-  const x = off + a * Math.cos(phi), z = b * Math.sin(phi);
-  const X = x * cosT - z * sinT, Z = x * sinT + z * cosT; // Z > 0 faces the viewer
-  return [HOLO.cx + X, HOLO.yBot - (v + tilt * a * Math.cos(phi)) + Z * HOLO.squash, Z];
-}
-// ring paths: full outline (dim), viewer-facing runs (lit), and x extremes for the hull
-function ringD(sec, cosT, sinT, N) {
-  const pts = [];
-  for (let i = 0; i < N; i++) {
-    pts.push(secPt(sec[0], sec[1], sec[2], sec[3], sec[4] || 0, i * 2 * Math.PI / N, cosT, sinT));
-  }
-  let dim = '', lit = '', run = false, lo = pts[0], hi = pts[0];
-  for (let i = 0; i <= N; i++) {
-    const p = pts[i % N], xy = `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
-    dim += (i ? 'L' : 'M') + xy;
-    if (p[2] > 0) { lit += (run ? 'L' : 'M') + xy; run = true; } else run = false;
-    if (i < N) { if (p[0] < lo[0]) lo = p; if (p[0] > hi[0]) hi = p; }
-  }
-  return { dim, lit: lit || 'M-9 -9', lo, hi };
-}
-function svgEl(tag, parent, attrs) {
-  const el = document.createElementNS(SVGNS, tag);
-  for (const k in attrs) el.setAttribute(k, attrs[k]);
-  parent.appendChild(el);
-  return el;
-}
-function holoInit() {
-  const E = HOLO.els = { rings: [], lits: [], mers: [], coneEls: [], chamRings: [], chamEdges: [], amber: [] };
-  const rg = $('wireRings'), mg = $('wireMeridians');
-  for (let i = 0; i < HOLO.body.length; i++) {
-    E.rings.push(svgEl('path', rg, { opacity: 0.12, 'stroke-width': 0.9 }));
-    E.lits.push(svgEl('path', rg, { opacity: 0.3, 'stroke-width': 0.9 }));
-  }
-  for (let m = 0; m < HOLO.meridianN; m++) E.mers.push(svgEl('path', mg, {}));
-  E.profL = svgEl('path', $('wireProfile'), { opacity: 0.85 });
-  E.profR = svgEl('path', $('wireProfile'), { opacity: 0.85 });
-  for (let i = 0; i < HOLO.cone.length + 2; i++) {
-    E.coneEls.push(svgEl('path', mg, { opacity: 0.22, 'stroke-width': 0.8 }));
-  }
-  const cg = $('wireChamber'), ag = $('wireChamberAmber');
-  for (let i = 0; i < HOLO.chamber.rings.length; i++) {
-    E.chamRings.push(svgEl('path', cg, { opacity: 0.7, 'stroke-width': 1 }));
-  }
-  for (let i = 0; i < 4; i++) E.chamEdges.push(svgEl('path', cg, { opacity: 0.6, 'stroke-width': 1 }));
-  E.amber.push(svgEl('path', ag, { opacity: 0.85, 'stroke-width': 1.6 })); // metal band
-  for (let i = 0; i < HOLO.chamber.cap.length; i++) {
-    E.amber.push(svgEl('path', ag, { opacity: 0.9, 'stroke-width': 1.1 }));
-  }
-}
-function holoFrame(now) {
-  const cosT = Math.cos(HOLO.angle), sinT = Math.sin(HOLO.angle), E = HOLO.els;
-  // body cross-section rings + silhouette hull
-  let dL = '';
-  const his = [];
-  HOLO.body.forEach((sec, i) => {
-    const r = ringD(sec, cosT, sinT, 24);
-    E.rings[i].setAttribute('d', r.dim);
-    E.lits[i].setAttribute('d', r.lit);
-    dL += `${i ? 'L' : 'M'}${r.lo[0].toFixed(1)} ${r.lo[1].toFixed(1)}`;
-    his.push(r.hi);
-  });
-  E.profL.setAttribute('d', dL);
-  E.profR.setAttribute('d', his.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(''));
-  $('holoBody').setAttribute('d',
-    dL + his.slice().reverse().map(p => `L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('') + 'Z');
-  // meridians down the loft; m=0 and m=N/2 are the fin's front/back creases
-  for (let m = 0; m < HOLO.meridianN; m++) {
-    const phi = m * 2 * Math.PI / HOLO.meridianN;
-    let d = '', zMid = 0;
-    HOLO.body.forEach((sec, i) => {
-      const p = secPt(sec[0], sec[1], sec[2], sec[3], sec[4] || 0, phi, cosT, sinT);
-      d += `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
-      if (i === 7) zMid = p[2];
-    });
-    const el = E.mers[m];
-    el.setAttribute('d', d);
-    const f = Math.max(-1, Math.min(1, zMid / 18));
-    el.setAttribute('opacity', m === 0 || m === HOLO.meridianN / 2 ? 0.75
-      : (f > 0 ? 0.13 + 0.33 * f : 0.05 + 0.07 * (1 + f)).toFixed(2));
-  }
-  // internal perc cone: rings then front/back creases
-  HOLO.cone.forEach((sec, i) => {
-    E.coneEls[i].setAttribute('d', ringD(sec, cosT, sinT, 16).dim);
-  });
-  for (let k = 0; k < 2; k++) {
-    E.coneEls[HOLO.cone.length + k].setAttribute('d', HOLO.cone.map((sec, i) => {
-      const p = secPt(sec[0], sec[1], sec[2], sec[3], 0, k * Math.PI, cosT, sinT);
-      return `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
-    }).join(''));
-  }
-  // chamber cylinder + amber band/carb cap on the front shelf
-  const ch = HOLO.chamber;
-  ch.rings.forEach(([v, r], i) => {
-    E.chamRings[i].setAttribute('d', ringD([v, ch.off, r, r, 0], cosT, sinT, 20).dim);
-  });
-  E.chamEdges.forEach((el, i) => {
-    const phi = i * Math.PI / 2;
-    const p1 = secPt(ch.rings[0][0], ch.off, 15.5, 15.5, 0, phi, cosT, sinT);
-    const p2 = secPt(ch.rings[2][0], ch.off, 14.5, 14.5, 0, phi, cosT, sinT);
-    el.setAttribute('d', `M${p1[0].toFixed(1)} ${p1[1].toFixed(1)}L${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`);
-  });
-  E.amber[0].setAttribute('d', ringD([ch.band[0], ch.off, ch.band[1], ch.band[1], 0], cosT, sinT, 20).dim);
-  ch.cap.forEach(([v, r], i) => {
-    E.amber[i + 1].setAttribute('d', ringD([v, ch.off, r, r, 0], cosT, sinT, 16).dim);
-  });
-  const face = Math.max(0.15, 0.55 + 0.45 * sinT); // chamber rides the model's front
-  $('wireChamber').setAttribute('opacity', face.toFixed(2));
-  $('wireChamberAmber').setAttribute('opacity', Math.min(1, face + 0.1).toFixed(2));
-  // LED ring low on the base, recolored by state via #ledBand
-  const led = ringD([10, -1, 37.5, 35.8, 0], cosT, sinT, 24);
-  $('ledBack').setAttribute('d', led.dim);
-  $('ledFront').setAttribute('d', led.lit);
-  // scan ring sweeping bottom -> top along the loft
-  const sT = (now / 4200) % 1, sv = sT * 203;
-  let j = 1;
-  while (j < HOLO.body.length - 1 && HOLO.body[j][0] < sv) j++;
-  const s0 = HOLO.body[j - 1], s1 = HOLO.body[j];
-  const g = Math.max(0, Math.min(1, (sv - s0[0]) / (s1[0] - s0[0])));
-  const lerp = k => s0[k] + g * (s1[k] - s0[k]);
-  const sc = $('scanRing');
-  sc.setAttribute('d', ringD([sv, lerp(1), lerp(2) + 2.5, lerp(3) + 2.5, 0], cosT, sinT, 20).dim);
-  sc.setAttribute('opacity', (0.12 + 0.28 * Math.sin(sT * Math.PI)).toFixed(2));
-}
-let holoLastT = 0;
-function holoTick(now) {
-  if (!holoLastT) holoLastT = now;
-  if (now - holoLastT > 33) {
-    HOLO.angle += Math.min(100, now - holoLastT) * 0.00035; // ~0.35 rad/s
-    holoLastT = now;
-    holoFrame(now);
-  }
-  requestAnimationFrame(holoTick);
-}
-
 buildGauge();
-holoInit();
-if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  holoFrame(2100); // static pose, no spin
-  $('scanRing').setAttribute('opacity', 0);
-} else {
-  requestAnimationFrame(holoTick);
-}
 if (location.hash === '#demo') startDemo();
 if (!navigator.bluetooth) {
   $('noBle').style.display = 'block';
