@@ -21,7 +21,8 @@ Android: works directly in Chrome; can be added to the home screen as an app.
 - 4 heat profiles: view, switch, edit temperature (350–620°F) and duration (15–180s)
 - Stealth mode, lantern mode, LED brightness
 - °F/°C toggle (persisted), in-app debug log (Bluefy has no devtools)
-- Stark-HUD UI: holographic wireframe of the device with live callouts, radial
+- Stark-HUD UI: rotating 3D holographic wireframe of the device (lofted
+  cross-section mesh traced from a reference render) with live callouts, radial
   thermal gauge, live temp sparkline, stat tiles. `#demo` URL hash previews the
   dashboard with simulated telemetry (no device needed).
 

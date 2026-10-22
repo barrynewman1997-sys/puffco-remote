@@ -291,16 +291,17 @@
           <path id="ledFront" stroke-width="2.6"/>
         </g>
         <g id="wireChamber" class="holo-stroke" stroke-width="1.1"></g>
-        <ellipse id="scanRing" cx="150" fill="none" stroke="#27d7f5" stroke-width="1.6" opacity="0"/>
+        <g id="wireChamberAmber" fill="none" stroke="#ffb13d"></g>
+        <path id="scanRing" fill="none" stroke="#27d7f5" stroke-width="1.6" opacity="0"/>
 
         <!-- callouts -->
         <g stroke="rgba(39,215,245,0.45)" stroke-width="1" fill="none">
-          <circle cx="184" cy="88" r="2.5" fill="#27d7f5" stroke="none"/>
-          <path d="M184 88 L214 58 L246 58"/>
-          <circle cx="108" cy="162" r="2.5" fill="#27d7f5" stroke="none"/>
-          <path d="M108 162 L96 130 L54 130" />
-          <circle cx="190" cy="218" r="2.5" fill="#27d7f5" stroke="none"/>
-          <path d="M190 218 L216 214 L246 214"/>
+          <circle cx="162" cy="94" r="2.5" fill="#27d7f5" stroke="none"/>
+          <path d="M162 94 L214 58 L246 58"/>
+          <circle cx="120" cy="150" r="2.5" fill="#27d7f5" stroke="none"/>
+          <path d="M120 150 L96 130 L54 130" />
+          <circle cx="184" cy="196" r="2.5" fill="#27d7f5" stroke="none"/>
+          <path d="M184 196 L216 214 L246 214"/>
         </g>
         <g text-anchor="start">
           <text class="holo-label" x="218" y="50">GLASS / STATE</text>
@@ -1208,39 +1209,54 @@ function startDemo() {
   }, 1100);
 }
 
-/* ---------------- 3D hologram: rotating lathe wireframe of the Peak ---------------- */
+/* ---------------- 3D hologram: rotating loft wireframe of the Peak ---------------- */
+// Traced from the user's reference render: angular glass fin over a swooping base,
+// chamber + amber carb cap riding the front shelf, internal perc cone.
+// Each cross-section ring: [v height, off front-back, a front-back r, b lateral r, tilt]
 const HOLO = {
-  cx: 150, yBot: 236, height: 205, maxR: 42, squash: 0.30,
-  // Peak silhouette as a surface of revolution: [heightFrac 0=base..1=mouth, radiusFrac]
-  profile: [
-    [0.000, 0.86], [0.020, 0.98], [0.100, 1.00], [0.240, 0.95], [0.360, 0.86],
-    [0.450, 0.75], [0.478, 0.69], [0.500, 0.64], [0.545, 0.75], [0.625, 0.82],
-    [0.700, 0.81], [0.770, 0.74], [0.830, 0.62], [0.880, 0.48], [0.925, 0.37],
-    [0.965, 0.31], [1.000, 0.29],
+  cx: 150, yBot: 236, squash: 0.30, angle: 0.5, meridianN: 12, els: null,
+  body: [
+    [1,   -1.0,  36.0, 34.2, 0],
+    [21,  -1.0,  38.5, 37.0, 0],
+    [45,   0.0,  38.8, 37.3, 0],
+    [70,   2.2,  39.2, 37.3, 0],
+    [82,   6.6,  42.1, 36.2, 0],     // shoulder / chamber shelf (swoosh overhang)
+    [90,  -8.0,  26.6, 16.0, 0],     // glass fin begins
+    [106, -10.4, 22.6, 12.7, 0],
+    [126, -14.2, 17.5,  9.5, 0],
+    [147, -17.4, 13.0,  6.9, 0],
+    [167, -19.7,  9.3,  5.0, 0],
+    [187, -21.1,  6.6,  3.6, 0],
+    [197, -22.7,  7.2,  4.7, -0.2],
+    [203, -23.5,  8.6,  6.5, -0.45], // angled mouthpiece rim
   ],
-  meridianN: 12, ledT: 0.055, angle: 0.5,
-  meridianEls: [], ringEls: [], profL: null, profR: null, cham: null,
+  cone: [ // internal perc cone, visible through the glass
+    [81, -15.5, 14.4, 9.0, 0], [116, -19.5, 10.0, 6.5, 0], [156, -20.6, 3.9, 3.0, 0],
+  ],
+  chamber: { off: 32, rings: [[82, 15.5], [96, 15.5], [104, 14.0]], band: [87, 15.8],
+             cap: [[108, 11], [114, 12.5], [117, 9]] },
 };
 const SVGNS = 'http://www.w3.org/2000/svg';
-const holoY = t => HOLO.yBot - t * HOLO.height;
-function holoR(t) {
-  const p = HOLO.profile;
-  if (t <= p[0][0]) return p[0][1] * HOLO.maxR;
-  for (let i = 1; i < p.length; i++) {
-    if (t <= p[i][0]) {
-      const f = (t - p[i - 1][0]) / (p[i][0] - p[i - 1][0]);
-      return (p[i - 1][1] + f * (p[i][1] - p[i - 1][1])) * HOLO.maxR;
-    }
-  }
-  return p[p.length - 1][1] * HOLO.maxR;
+// one vertex of a cross-section ring, rotated about the vertical axis and projected
+function secPt(v, off, a, b, tilt, phi, cosT, sinT) {
+  const x = off + a * Math.cos(phi), z = b * Math.sin(phi);
+  const X = x * cosT - z * sinT, Z = x * sinT + z * cosT; // Z > 0 faces the viewer
+  return [HOLO.cx + X, HOLO.yBot - (v + tilt * a * Math.cos(phi)) + Z * HOLO.squash, Z];
 }
-// the glass snout leans toward the front above this height (bends the lathe axis)
-const LEAN_T = 0.82;
-const holoLean = t => t > LEAN_T ? Math.pow((t - LEAN_T) / (1 - LEAN_T), 2) * 14 : 0;
-// half ring for a projected point p = [centerX, centerY, radius]; front = bottom arc
-function ringArc(p, front) {
-  const y = p[1].toFixed(1), r = p[2], ry = (r * HOLO.squash).toFixed(1);
-  return `M${(p[0] - r).toFixed(1)} ${y} A${r.toFixed(1)} ${ry} 0 0 ${front ? 0 : 1} ${(p[0] + r).toFixed(1)} ${y}`;
+// ring paths: full outline (dim), viewer-facing runs (lit), and x extremes for the hull
+function ringD(sec, cosT, sinT, N) {
+  const pts = [];
+  for (let i = 0; i < N; i++) {
+    pts.push(secPt(sec[0], sec[1], sec[2], sec[3], sec[4] || 0, i * 2 * Math.PI / N, cosT, sinT));
+  }
+  let dim = '', lit = '', run = false, lo = pts[0], hi = pts[0];
+  for (let i = 0; i <= N; i++) {
+    const p = pts[i % N], xy = `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
+    dim += (i ? 'L' : 'M') + xy;
+    if (p[2] > 0) { lit += (run ? 'L' : 'M') + xy; run = true; } else run = false;
+    if (i < N) { if (p[0] < lo[0]) lo = p; if (p[0] > hi[0]) hi = p; }
+  }
+  return { dim, lit: lit || 'M-9 -9', lo, hi };
 }
 function svgEl(tag, parent, attrs) {
   const el = document.createElementNS(SVGNS, tag);
@@ -1249,91 +1265,101 @@ function svgEl(tag, parent, attrs) {
   return el;
 }
 function holoInit() {
-  const rings = $('wireRings');
-  for (let i = 0; i < HOLO.profile.length; i++) {
-    HOLO.ringEls.push([
-      svgEl('path', rings, { opacity: 0.13, 'stroke-width': 0.9 }),  // back half
-      svgEl('path', rings, { opacity: 0.34, 'stroke-width': 0.9 }),  // front half
-    ]);
+  const E = HOLO.els = { rings: [], lits: [], mers: [], coneEls: [], chamRings: [], chamEdges: [], amber: [] };
+  const rg = $('wireRings'), mg = $('wireMeridians');
+  for (let i = 0; i < HOLO.body.length; i++) {
+    E.rings.push(svgEl('path', rg, { opacity: 0.12, 'stroke-width': 0.9 }));
+    E.lits.push(svgEl('path', rg, { opacity: 0.3, 'stroke-width': 0.9 }));
   }
-  HOLO.profL = svgEl('path', $('wireProfile'), { opacity: 0.9 });
-  HOLO.profR = svgEl('path', $('wireProfile'), { opacity: 0.9 });
-  const led = [HOLO.cx, holoY(HOLO.ledT), holoR(HOLO.ledT)];
-  $('ledBack').setAttribute('d', ringArc(led, 0));
-  $('ledFront').setAttribute('d', ringArc(led, 1));
-  const mg = $('wireMeridians');
-  for (let m = 0; m < HOLO.meridianN; m++) HOLO.meridianEls.push(svgEl('path', mg, {}));
-  const cg = $('wireChamber');
-  HOLO.cham = { rim: svgEl('path', cg, {}), cap: svgEl('path', cg, { opacity: 0.8 }),
-                s1: svgEl('line', cg, {}), s2: svgEl('line', cg, {}) };
+  for (let m = 0; m < HOLO.meridianN; m++) E.mers.push(svgEl('path', mg, {}));
+  E.profL = svgEl('path', $('wireProfile'), { opacity: 0.85 });
+  E.profR = svgEl('path', $('wireProfile'), { opacity: 0.85 });
+  for (let i = 0; i < HOLO.cone.length + 2; i++) {
+    E.coneEls.push(svgEl('path', mg, { opacity: 0.22, 'stroke-width': 0.8 }));
+  }
+  const cg = $('wireChamber'), ag = $('wireChamberAmber');
+  for (let i = 0; i < HOLO.chamber.rings.length; i++) {
+    E.chamRings.push(svgEl('path', cg, { opacity: 0.7, 'stroke-width': 1 }));
+  }
+  for (let i = 0; i < 4; i++) E.chamEdges.push(svgEl('path', cg, { opacity: 0.6, 'stroke-width': 1 }));
+  E.amber.push(svgEl('path', ag, { opacity: 0.85, 'stroke-width': 1.6 })); // metal band
+  for (let i = 0; i < HOLO.chamber.cap.length; i++) {
+    E.amber.push(svgEl('path', ag, { opacity: 0.9, 'stroke-width': 1.1 }));
+  }
 }
 function holoFrame(now) {
-  const { cx, maxR, squash } = HOLO;
-  const azN = HOLO.angle + 2.2, lX = Math.cos(azN), lZ = Math.sin(azN);
-  // project each profile ring; the leaned snout rings shift with the rotation
-  const pts = HOLO.profile.map(([t, rf]) => {
-    const off = holoLean(t);
-    return [cx + off * lX, holoY(t) + off * lZ * squash, rf * maxR];
+  const cosT = Math.cos(HOLO.angle), sinT = Math.sin(HOLO.angle), E = HOLO.els;
+  // body cross-section rings + silhouette hull
+  let dL = '';
+  const his = [];
+  HOLO.body.forEach((sec, i) => {
+    const r = ringD(sec, cosT, sinT, 24);
+    E.rings[i].setAttribute('d', r.dim);
+    E.lits[i].setAttribute('d', r.lit);
+    dL += `${i ? 'L' : 'M'}${r.lo[0].toFixed(1)} ${r.lo[1].toFixed(1)}`;
+    his.push(r.hi);
   });
-  pts.forEach((p, i) => {
-    HOLO.ringEls[i][0].setAttribute('d', ringArc(p, 0));
-    HOLO.ringEls[i][1].setAttribute('d', ringArc(p, 1));
-  });
-  const edge = (p, i, sign) => `${i ? 'L' : 'M'}${(p[0] + sign * p[2]).toFixed(1)} ${p[1].toFixed(1)}`;
-  const dL = pts.map((p, i) => edge(p, i, -1)).join('');
-  HOLO.profL.setAttribute('d', dL);
-  HOLO.profR.setAttribute('d', pts.map((p, i) => edge(p, i, 1)).join(''));
+  E.profL.setAttribute('d', dL);
+  E.profR.setAttribute('d', his.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(''));
   $('holoBody').setAttribute('d',
-    dL + pts.slice().reverse().map(p => `L${(p[0] + p[2]).toFixed(1)} ${p[1].toFixed(1)}`).join('') + 'Z');
-  // meridians (the rotating longitude lines)
+    dL + his.slice().reverse().map(p => `L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('') + 'Z');
+  // meridians down the loft; m=0 and m=N/2 are the fin's front/back creases
   for (let m = 0; m < HOLO.meridianN; m++) {
-    const th = HOLO.angle + (m * Math.PI * 2) / HOLO.meridianN;
-    const c = Math.cos(th), s = Math.sin(th);
-    let d = '';
-    for (let i = 0; i < pts.length; i++) {
-      const p = pts[i];
-      d += `${i ? 'L' : 'M'}${(p[0] + p[2] * c).toFixed(1)} ${(p[1] + p[2] * s * squash).toFixed(1)}`;
-    }
-    const el = HOLO.meridianEls[m];
+    const phi = m * 2 * Math.PI / HOLO.meridianN;
+    let d = '', zMid = 0;
+    HOLO.body.forEach((sec, i) => {
+      const p = secPt(sec[0], sec[1], sec[2], sec[3], sec[4] || 0, phi, cosT, sinT);
+      d += `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
+      if (i === 7) zMid = p[2];
+    });
+    const el = E.mers[m];
     el.setAttribute('d', d);
-    el.setAttribute('opacity', (s > 0 ? 0.13 + 0.38 * s : 0.05 + 0.07 * (1 + s)).toFixed(2));
+    const f = Math.max(-1, Math.min(1, zMid / 18));
+    el.setAttribute('opacity', m === 0 || m === HOLO.meridianN / 2 ? 0.75
+      : (f > 0 ? 0.13 + 0.33 * f : 0.05 + 0.07 * (1 + f)).toFixed(2));
   }
-  // chamber port orbiting with the model (z>0 = toward viewer)
-  const az = HOLO.angle + 2.2, ca = Math.cos(az), sa = Math.sin(az);
-  const tC = 0.36, rS = holoR(tC), vS = HOLO.height * tC;
-  const dh = 0.77, dv = 0.64;                              // port axis: out + up ~40deg
-  const D = [dh * ca, dv, dh * sa];
-  const S = [rS * ca, vS, rS * sa];
-  const C = [S[0] + 15 * D[0], S[1] + 15 * D[1], S[2] + 15 * D[2]];
-  const u1 = [-sa, 0, ca], u2 = [dv * ca, -dh, dv * sa];   // basis of the port's rim plane
-  const proj = p => `${(cx + p[0]).toFixed(1)} ${(HOLO.yBot - p[1] + p[2] * squash).toFixed(1)}`;
-  const circ = (ctr, rad, steps) => {
-    let d = '';
-    for (let i = 0; i < steps; i++) {
-      const b = i * Math.PI * 2 / steps, cb = Math.cos(b) * rad, sb = Math.sin(b) * rad;
-      d += `${i ? 'L' : 'M'}${proj([ctr[0] + u1[0] * cb + u2[0] * sb,
-                                    ctr[1] + u1[1] * cb + u2[1] * sb,
-                                    ctr[2] + u1[2] * cb + u2[2] * sb])}`;
-    }
-    return d + 'Z';
-  };
-  HOLO.cham.rim.setAttribute('d', circ(C, 9, 16));
-  HOLO.cham.cap.setAttribute('d', circ([C[0] + 5 * D[0], C[1] + 5 * D[1], C[2] + 5 * D[2]], 4.5, 12));
-  const strut = (el, sign) => {
-    const a = proj([C[0] + sign * 9 * u1[0], C[1], C[2] + sign * 9 * u1[2]]).split(' ');
-    const b = proj([S[0] + sign * 6 * u1[0], S[1], S[2] + sign * 6 * u1[2]]).split(' ');
-    el.setAttribute('x1', a[0]); el.setAttribute('y1', a[1]);
-    el.setAttribute('x2', b[0]); el.setAttribute('y2', b[1]);
-  };
-  strut(HOLO.cham.s1, 1); strut(HOLO.cham.s2, -1);
-  $('wireChamber').setAttribute('opacity', Math.max(0.1, 0.3 + 0.42 * sa).toFixed(2));
-  // scan ring sweeping bottom -> top
-  const sT = (now / 4200) % 1, sr = holoR(sT) + 3, sc = $('scanRing');
-  sc.setAttribute('cx', (cx + holoLean(sT) * lX).toFixed(1));
-  sc.setAttribute('cy', (holoY(sT) + holoLean(sT) * lZ * squash).toFixed(1));
-  sc.setAttribute('rx', sr.toFixed(1));
-  sc.setAttribute('ry', (sr * squash + 1.5).toFixed(1));
-  sc.setAttribute('opacity', (0.15 + 0.3 * Math.sin(sT * Math.PI)).toFixed(2));
+  // internal perc cone: rings then front/back creases
+  HOLO.cone.forEach((sec, i) => {
+    E.coneEls[i].setAttribute('d', ringD(sec, cosT, sinT, 16).dim);
+  });
+  for (let k = 0; k < 2; k++) {
+    E.coneEls[HOLO.cone.length + k].setAttribute('d', HOLO.cone.map((sec, i) => {
+      const p = secPt(sec[0], sec[1], sec[2], sec[3], 0, k * Math.PI, cosT, sinT);
+      return `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
+    }).join(''));
+  }
+  // chamber cylinder + amber band/carb cap on the front shelf
+  const ch = HOLO.chamber;
+  ch.rings.forEach(([v, r], i) => {
+    E.chamRings[i].setAttribute('d', ringD([v, ch.off, r, r, 0], cosT, sinT, 20).dim);
+  });
+  E.chamEdges.forEach((el, i) => {
+    const phi = i * Math.PI / 2;
+    const p1 = secPt(ch.rings[0][0], ch.off, 15.5, 15.5, 0, phi, cosT, sinT);
+    const p2 = secPt(ch.rings[2][0], ch.off, 14.5, 14.5, 0, phi, cosT, sinT);
+    el.setAttribute('d', `M${p1[0].toFixed(1)} ${p1[1].toFixed(1)}L${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`);
+  });
+  E.amber[0].setAttribute('d', ringD([ch.band[0], ch.off, ch.band[1], ch.band[1], 0], cosT, sinT, 20).dim);
+  ch.cap.forEach(([v, r], i) => {
+    E.amber[i + 1].setAttribute('d', ringD([v, ch.off, r, r, 0], cosT, sinT, 16).dim);
+  });
+  const face = Math.max(0.15, 0.55 + 0.45 * sinT); // chamber rides the model's front
+  $('wireChamber').setAttribute('opacity', face.toFixed(2));
+  $('wireChamberAmber').setAttribute('opacity', Math.min(1, face + 0.1).toFixed(2));
+  // LED ring low on the base, recolored by state via #ledBand
+  const led = ringD([10, -1, 37.5, 35.8, 0], cosT, sinT, 24);
+  $('ledBack').setAttribute('d', led.dim);
+  $('ledFront').setAttribute('d', led.lit);
+  // scan ring sweeping bottom -> top along the loft
+  const sT = (now / 4200) % 1, sv = sT * 203;
+  let j = 1;
+  while (j < HOLO.body.length - 1 && HOLO.body[j][0] < sv) j++;
+  const s0 = HOLO.body[j - 1], s1 = HOLO.body[j];
+  const g = Math.max(0, Math.min(1, (sv - s0[0]) / (s1[0] - s0[0])));
+  const lerp = k => s0[k] + g * (s1[k] - s0[k]);
+  const sc = $('scanRing');
+  sc.setAttribute('d', ringD([sv, lerp(1), lerp(2) + 2.5, lerp(3) + 2.5, 0], cosT, sinT, 20).dim);
+  sc.setAttribute('opacity', (0.12 + 0.28 * Math.sin(sT * Math.PI)).toFixed(2));
 }
 let holoLastT = 0;
 function holoTick(now) {
