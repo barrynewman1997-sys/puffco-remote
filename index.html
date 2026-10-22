@@ -251,6 +251,7 @@
   </svg>
   <p>WAKE UNIT &mdash; SINGLE TAP ON DEVICE BUTTON<br>THEN INITIALIZE UPLINK</p>
   <button class="big-btn" id="btnConnect">Initialize Uplink</button>
+  <button class="big-btn" id="btnReconnect" style="display:none"></button>
   <button class="ghost-btn" id="btnConnectAll">Unit not found &mdash; wide scan</button>
   <div id="noBle">
     <b>Bluetooth is not available in this browser.</b><br>
@@ -683,14 +684,48 @@ async function connect(scanAll) {
   }
   try {
     const device = await navigator.bluetooth.requestDevice(opts);
+    await linkDevice(device);
+  } catch (err) {
+    onLinkError(err);
+  }
+}
+
+// reconnect to a previously granted device without the chooser (Chrome remembers permissions)
+async function reconnectKnown() {
+  try {
+    const devs = await navigator.bluetooth.getDevices();
+    if (!devs.length) { toast('NO REMEMBERED UNITS — USE INITIALIZE UPLINK'); return; }
+    log(`remembered units: ${devs.map(d => d.name || d.id).join(', ')}`);
+    await linkDevice(devs[0]);
+  } catch (err) {
+    onLinkError(err);
+  }
+}
+
+// Windows BLE often rejects the first attempt(s); retry with backoff
+async function gattConnectRetry(device, tries) {
+  for (let i = 1; i <= tries; i++) {
+    try {
+      setConn('busy', `Linking ${i}/${tries}`);
+      return await Promise.race([
+        device.gatt.connect(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('GATT connect timed out (15s) — wake the unit and move it closer')), 15000)),
+      ]);
+    } catch (err) {
+      log(`GATT attempt ${i}/${tries}: ${err.message}`, true);
+      try { device.gatt.disconnect(); } catch (e) {}
+      if (i === tries) throw err;
+      await new Promise(r => setTimeout(r, 1000 * i));
+    }
+  }
+}
+
+async function linkDevice(device) {
     client.device = device;
     device.addEventListener('gattserverdisconnected', onDisconnected);
     setConn('busy', 'Linking');
     log(`connecting to "${device.name || device.id}"...`);
-    client.server = await Promise.race([
-      device.gatt.connect(),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('GATT connect timed out (15s) — wake the unit and move it closer')), 15000)),
-    ]);
+    client.server = await gattConnectRetry(device, 4);
     log('GATT connected, locating Lorax service...');
     const svc = await client.server.getPrimaryService(LORAX_SERVICE);
     log('service found, getting characteristics...');
@@ -710,15 +745,16 @@ async function connect(scanAll) {
     toast('UPLINK ESTABLISHED');
     await initialReads();
     startPolling();
-  } catch (err) {
-    log(`connect failed: ${err.message}`, true);
-    setConn('off', 'Offline');
-    if (!/cancelled|canceled|chooser/i.test(err.message)) {
-      toast(`LINK FAILED: ${err.message}`);
-      logEl.style.display = 'block'; // surface the telemetry log for debugging
-    }
-    try { if (client.device && client.device.gatt.connected) client.device.gatt.disconnect(); } catch (e) {}
+}
+
+function onLinkError(err) {
+  log(`connect failed: ${err.message}`, true);
+  setConn('off', 'Offline');
+  if (!/cancelled|canceled|chooser/i.test(err.message)) {
+    toast(`LINK FAILED: ${err.message}`);
+    logEl.style.display = 'block'; // surface the telemetry log for debugging
   }
+  try { if (client.device && client.device.gatt.connected) client.device.gatt.disconnect(); } catch (e) {}
 }
 
 function onDisconnected() {
@@ -1107,6 +1143,7 @@ function nudgeTime(dir) {
 
 /* ---------------- wire up UI ---------------- */
 $('btnConnect').addEventListener('click', () => connect(false));
+$('btnReconnect').addEventListener('click', reconnectKnown);
 $('btnConnectAll').addEventListener('click', () => connect(true));
 $('btnDisconnect').addEventListener('click', disconnect);
 $('btnStart').addEventListener('click', () => modeCommand(MC.START, 'IGNITION'));
@@ -1194,6 +1231,19 @@ if (!navigator.bluetooth) {
   $('btnConnect').style.opacity = '0.4';
 }
 log(`Peak HUD loaded. Web Bluetooth: ${navigator.bluetooth ? 'available' : 'NOT available'}`);
+// offer one-tap relink when Chrome has a remembered device grant
+(async () => {
+  try {
+    if (navigator.bluetooth && navigator.bluetooth.getDevices) {
+      const devs = await navigator.bluetooth.getDevices();
+      if (devs.length) {
+        $('btnReconnect').textContent = `RELINK: ${devs[0].name || 'KNOWN UNIT'}`;
+        $('btnReconnect').style.display = 'block';
+        log(`remembered grant found: ${devs[0].name || devs[0].id}`);
+      }
+    }
+  } catch (e) { log(`getDevices failed: ${e.message}`, true); }
+})();
 </script>
 </body>
 </html>
