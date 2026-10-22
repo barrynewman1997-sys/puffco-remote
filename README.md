@@ -21,10 +21,11 @@ Android: works directly in Chrome; can be added to the home screen as an app.
 - 4 heat profiles: view, switch, edit temperature (350–620°F) and duration (15–180s)
 - Stealth mode, lantern mode, LED brightness
 - °F/°C toggle (persisted), in-app debug log (Bluefy has no devtools)
-- Stark-HUD UI: rotating 3D holographic wireframe of the device (lofted
-  cross-section mesh traced from a reference render) with live callouts, radial
-  thermal gauge, live temp sparkline, stat tiles. `#demo` URL hash previews the
-  dashboard with simulated telemetry (no device needed).
+- Stark-HUD UI: holographic "Unit Schematic" panel showing the exact device
+  render (`peak-render.png`) with an animated scan line and live callout chips
+  (state, temp, battery), radial thermal gauge, live temp sparkline, stat
+  tiles. `#demo` URL hash previews the dashboard with simulated telemetry
+  (no device needed).
 
 ## Protocol
 
@@ -49,3 +50,12 @@ Reference clones (not committed) were reviewed in the Claude scratchpad.
 - 2026-10-20: built, JS syntax-validated. Not yet tested against hardware —
   needs real Peak Pro + Bluefy session. Debug log panel captures all protocol
   traffic for troubleshooting.
+- 2026-10-22: PAUSED pending replacement hardware. The original Peak
+  ("BARRYS GAURDIAN") has a dead/wedged BLE radio: it appeared in scans but
+  rejected every GATT connection (Chrome ×4 retries, Windows-level pairing),
+  then stopped advertising entirely after button resets — invisible to both PC
+  and iPhone. Not an app bug; connect flow never got past the OS link layer.
+  Added this session: step-by-step connect logging (mirrored to console as
+  `[PeakHUD]`), GATT retry ×4 with 15s timeout, wide-scan button, one-tap
+  relink via remembered grants. See RESUME.md for the test plan when the new
+  unit arrives.
