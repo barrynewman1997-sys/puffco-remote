@@ -460,6 +460,7 @@ function resolveModel(name, modelNumber) {
 const $ = id => document.getElementById(id);
 const logEl = $('log');
 function log(msg, isErr) {
+  (isErr ? console.error : console.log)('[PeakHUD] ' + msg);
   const line = document.createElement('div');
   if (isErr) line.className = 'err';
   line.textContent = `${new Date().toTimeString().slice(0,8)} ${msg}`;
@@ -686,15 +687,22 @@ async function connect(scanAll) {
     device.addEventListener('gattserverdisconnected', onDisconnected);
     setConn('busy', 'Linking');
     log(`connecting to "${device.name || device.id}"...`);
-    client.server = await device.gatt.connect();
+    client.server = await Promise.race([
+      device.gatt.connect(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('GATT connect timed out (15s) — wake the unit and move it closer')), 15000)),
+    ]);
+    log('GATT connected, locating Lorax service...');
     const svc = await client.server.getPrimaryService(LORAX_SERVICE);
+    log('service found, getting characteristics...');
     client.cmdChar = await svc.getCharacteristic(CHAR_CMD);
     client.replyChar = await svc.getCharacteristic(CHAR_REPLY);
     client.replyChar.addEventListener('characteristicvaluechanged', onReply);
     await client.replyChar.startNotifications();
+    log('notifications on, authenticating...');
     client.connected = true;
     client.isProxy = /proxy/i.test(device.name || '');
     await authenticate();
+    log('auth OK');
     app.connectedAt = Date.now();
     setConn('on', 'Linked');
     $('connectCard').style.display = 'none';
@@ -705,7 +713,11 @@ async function connect(scanAll) {
   } catch (err) {
     log(`connect failed: ${err.message}`, true);
     setConn('off', 'Offline');
-    if (!/cancelled|canceled|chooser/i.test(err.message)) toast(`LINK FAILED: ${err.message}`);
+    if (!/cancelled|canceled|chooser/i.test(err.message)) {
+      toast(`LINK FAILED: ${err.message}`);
+      logEl.style.display = 'block'; // surface the telemetry log for debugging
+    }
+    try { if (client.device && client.device.gatt.connected) client.device.gatt.disconnect(); } catch (e) {}
   }
 }
 
